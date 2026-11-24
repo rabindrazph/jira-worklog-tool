@@ -10,6 +10,7 @@ import fcntl
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 import urllib.error
@@ -30,6 +31,11 @@ STATE_FILE = CONFIG_DIR / "state.json"
 LOCK_FILE = CONFIG_DIR / "run.lock"
 LOG_DIR = TOOL_DIR / "logs"
 TRANSCRIPTS_ROOT = HOME / ".claude" / "projects"
+
+# cron runs with a minimal PATH that usually doesn't include ~/.local/bin
+# (where the claude CLI is commonly installed), so PATH lookup alone isn't
+# reliable here — fall back to the common install locations.
+CLAUDE_BIN_CANDIDATES = [HOME / ".local" / "bin" / "claude", Path("/usr/local/bin/claude")]
 
 TICKET_RE = re.compile(r'([A-Z][A-Z0-9]{1,9}-\d+)')
 ROUND_TO_MINUTES = 5
@@ -148,6 +154,10 @@ def parse_args(argv=None) -> argparse.Namespace:
     parser.add_argument(
         "--void", nargs=2, metavar=("TICKET", "WORKLOG_ID"),
         help="Delete a previously-submitted Jira worklog (id from logs/<TICKET>/activity.log), then exit",
+    )
+    parser.add_argument(
+        "--skip", action="store_true",
+        help="Mark all pending activity as seen WITHOUT billing it (e.g. a session that wasn't real ticket work)",
     )
     return parser.parse_args(argv)
 
@@ -405,8 +415,18 @@ def raw_activity_text(prompts: list[str]) -> str:
     return "\n".join(seen)
 
 
-def summarize_activity(ticket: str, raw_text: str) -> str | None:
-    if not raw_text.strip():
+def resolve_claude_bin() -> str:
+    found = shutil.which("claude")
+    if found:
+        return found
+    for candidate in CLAUDE_BIN_CANDIDATES:
+        if candidate.exists():
+            return str(candidate)
+    return "claude"
+
+
+def summarize_activity(ticket: str, raw_text: str, api_key: str | None, base_url: str | None) -> str | None:
+    if not raw_text.strip() or not api_key:
         return None
     instruction = (
         "Rewrite the following raw log of prompts/notes from an engineer's AI-assisted "
@@ -428,24 +448,36 @@ def summarize_activity(ticket: str, raw_text: str) -> str | None:
         "specific things were changed or checked.\n\n"
         f"Raw session notes:\n{raw_text}"
     )
-    try:
-        result = subprocess.run(
-            ["claude", "-p", "--restricted", "--model", SUMMARY_MODEL, instruction],
-            capture_output=True, text=True, timeout=SUMMARY_TIMEOUT_SECONDS,
-        )
-    except (subprocess.TimeoutExpired, OSError) as e:
-        log(f"WARN: summarizer call failed ({e}); falling back to raw notes")
-        return None
-    if result.returncode != 0:
-        log(f"WARN: summarizer exited {result.returncode}: {result.stderr.strip()[:300]}")
-        return None
-    summary = result.stdout.strip()
-    return summary or None
+    cmd = [resolve_claude_bin(), "-p", "--restricted", "--bare", "--model", SUMMARY_MODEL, instruction]
+    env = {**os.environ, "ANTHROPIC_AUTH_TOKEN": api_key}
+    env.pop("ANTHROPIC_API_KEY", None)
+    if base_url:
+        env["ANTHROPIC_BASE_URL"] = base_url
+    else:
+        env.pop("ANTHROPIC_BASE_URL", None)
+    for attempt in (1, 2):
+        try:
+            result = subprocess.run(
+                cmd, capture_output=True, text=True, timeout=SUMMARY_TIMEOUT_SECONDS, env=env,
+            )
+        except (subprocess.TimeoutExpired, OSError) as e:
+            log(f"WARN: summarizer call failed on attempt {attempt} ({e})")
+            continue
+        if result.returncode != 0:
+            log(f"WARN: summarizer exited {result.returncode} on attempt {attempt}: "
+                f"stderr={result.stderr.strip()[:300]!r} stdout={result.stdout.strip()[:300]!r}")
+            continue
+        summary = result.stdout.strip()
+        if summary:
+            return summary
+        log(f"WARN: summarizer returned empty output on attempt {attempt}")
+    log("WARN: summarizer failed after retry; falling back to raw notes")
+    return None
 
 
-def build_comment(ticket: str, prompts: list[str]) -> str:
+def build_comment(ticket: str, prompts: list[str], api_key: str | None, anthropic_base_url: str | None) -> str:
     raw_text = raw_activity_text(prompts)
-    summary = summarize_activity(ticket, raw_text)
+    summary = summarize_activity(ticket, raw_text, api_key, anthropic_base_url)
     if summary:
         return summary
     if not raw_text:
@@ -496,6 +528,10 @@ def main(args: argparse.Namespace) -> int:
     base_url = creds["base_url"].rstrip("/")
     token = base64.b64encode(f"{creds['email']}:{creds['api_token']}".encode()).decode()
     auth_header = f"Basic {token}"
+    anthropic_api_key = creds.get("anthropic_api_key")
+    anthropic_base_url = creds.get("anthropic_base_url")
+    if not anthropic_api_key:
+        log("WARN: credentials.json has no 'anthropic_api_key'; comments will fall back to raw session notes")
 
     if args.void:
         ticket, worklog_id = args.void
@@ -554,6 +590,13 @@ def main(args: argparse.Namespace) -> int:
             if not events:
                 continue
             vlog(f"{state_key}: {len(events)} events loaded")
+
+            if args.skip:
+                new_events = [e for e in events if prev_logged is None or e["ts"] > prev_logged]
+                if new_events:
+                    session_states_touched[state_key] = new_events[-1]["ts"]
+                    log(f"Skipped {state_key} (marked seen, not billed, --skip)")
+                continue
 
             if prev_logged is None and not project_live:
                 # Pre-existing session from before this project went live:
@@ -619,7 +662,7 @@ def main(args: argparse.Namespace) -> int:
                 remaining_per_session[sk] -= 1
         else:
             seconds = round_minutes(e["minutes"]) * 60
-            comment = build_comment(e["ticket"], e["prompts"])
+            comment = build_comment(e["ticket"], e["prompts"], anthropic_api_key, anthropic_base_url)
             if args.dry_run:
                 log(f"[DRY RUN] Would log {seconds // 60}m on {e['ticket']} ({e['day']}): {comment}")
                 submitted += 1

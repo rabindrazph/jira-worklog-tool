@@ -24,7 +24,7 @@ There is no linter or build process in this repo. `fcntl` makes the script POSIX
 
 The script reads/writes state under `CONFIG_DIR` (a constant near the top of `jira_worklog.py`), not in this repo:
 
-- `credentials.json` — `{base_url, email, api_token}` for Jira Basic Auth. Required; validated by `validate_credentials()`.
+- `credentials.json` — `{base_url, email, api_token}` for Jira Basic Auth (required; validated by `validate_credentials()`), plus optional `anthropic_api_key` + `anthropic_base_url` used to authenticate the `claude -p` comment-summarizer subprocess headlessly. These are exported as `ANTHROPIC_AUTH_TOKEN` + `ANTHROPIC_BASE_URL` (bearer-token auth through this org's internal AI gateway, not the public Anthropic API's `ANTHROPIC_API_KEY`/x-api-key), combined with `--bare` so the subprocess never falls back to OAuth/keychain login. Without `anthropic_api_key`, comments fall back to raw session notes.
 - `config.json` — `{enabled_projects: [...], gap_cap_minutes, min_floor_minutes, daily_cap_hours}`. Required; validated by `validate_config()`.
 - `state.json` — `{sessions: {...}, bootstrapped_projects: [...], daily_submitted_minutes: {...}, project_keys_cache: {...}}`. Created automatically, written atomically (temp file + `os.replace`).
 - `run.lock` — advisory lock (`fcntl.flock`) held for the duration of a run; a concurrent invocation exits immediately instead of racing.
@@ -49,7 +49,7 @@ The pipeline, driven by `main()`, runs in distinct stages — most bugs will inv
 
 6. **Aggregation & capping**: `aggregate()` sums minutes per `(ticket, day)` across all sessions/projects. `apply_daily_cap()` scales down (or fully zeroes) a day's entries so that new-run minutes plus `state["daily_submitted_minutes"][day]` (minutes already successfully submitted in *earlier* runs that same day) stay within `daily_cap_hours`.
 
-7. **Comment generation** (`build_comment` → `summarize_activity`): Prompt text is redacted (`redact_sensitive()` — strips Bearer tokens, JWTs, key/secret/password assignments, emails, AWS keys) before being used. Shells out to `claude -p --restricted --model claude-sonnet-5` to turn it into a one-sentence status update suitable for a Jira comment. Falls back to a truncated raw-prompt list if the CLI call fails or times out (`SUMMARY_TIMEOUT_SECONDS`).
+7. **Comment generation** (`build_comment` → `summarize_activity`): Prompt text is redacted (`redact_sensitive()` — strips Bearer tokens, JWTs, key/secret/password assignments, emails, AWS keys) before being used. Shells out to `claude -p --restricted --bare --model claude-sonnet-5`, authenticated via `ANTHROPIC_AUTH_TOKEN`/`ANTHROPIC_BASE_URL` (from `credentials.json`'s `anthropic_api_key`/`anthropic_base_url`, pointing at this org's internal AI gateway) so it works unattended from cron without any interactive `/login`, to turn it into a one-sentence status update suitable for a Jira comment. Retries once, then falls back to a truncated raw-prompt list if the CLI call fails, returns empty output, or times out (`SUMMARY_TIMEOUT_SECONDS`).
 
 8. **Submission** (`submit_worklog`): POSTs to `{base_url}/rest/api/3/issue/{ticket}/worklog` via stdlib `urllib`, Basic Auth from `credentials.json`. Returns the Jira worklog id on success (parsed from the response body) or `None` on failure.
 
