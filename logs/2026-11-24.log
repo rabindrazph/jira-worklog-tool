@@ -1,0 +1,244 @@
+[2026-11-24T16:54:54] DRY RUN: no worklogs will be submitted to Jira and no state will be saved
+[2026-11-24T16:54:54] [verbose] claims-manager:0eb62388-bfbd-4588-a952-b6c53c0b0a77: 810 events loaded
+[2026-11-24T16:54:54] [verbose] claims-manager:0eb62388-bfbd-4588-a952-b6c53c0b0a77: 0 interval(s), unmatched=0.0m
+[2026-11-24T16:54:54] [verbose] claims-manager:2eeeaf79-29e1-47d9-92c3-2e9d373f045c: 49 events loaded
+[2026-11-24T16:54:54] [verbose] claims-manager:2eeeaf79-29e1-47d9-92c3-2e9d373f045c: 0 interval(s), unmatched=0.0m
+[2026-11-24T16:54:54] [verbose] claims-manager:9f129cd0-22ce-47e1-bdaf-e36043fb7d0c: 162 events loaded
+[2026-11-24T16:54:54] [verbose] claims-manager:9f129cd0-22ce-47e1-bdaf-e36043fb7d0c: 0 interval(s), unmatched=0.0m
+[2026-11-24T16:54:54] [verbose] claims-manager:cfa02567-afe4-48e7-89ad-299a838d4676: 294 events loaded
+[2026-11-24T16:54:54] [verbose] claims-manager:cfa02567-afe4-48e7-89ad-299a838d4676: 0 interval(s), unmatched=0.0m
+[2026-11-24T16:54:54] [verbose] claims-manager:d6f6804e-79e8-41af-bfc1-26a51a62457e: 298 events loaded
+[2026-11-24T16:54:54] [verbose] claims-manager:d6f6804e-79e8-41af-bfc1-26a51a62457e: 0 interval(s), unmatched=0.0m
+[2026-11-24T16:54:54] [verbose] claims-manager:ff80b595-1109-4525-9f4a-e93e858d7ac8: 62 events loaded
+[2026-11-24T16:54:54] [verbose] claims-manager:ff80b595-1109-4525-9f4a-e93e858d7ac8: 0 interval(s), unmatched=0.0m
+[2026-11-24T16:54:54] [verbose] client-integration:cc2cff65-84f2-443c-a627-7e14488a2de7: 25 events loaded
+[2026-11-24T16:54:54] [verbose] client-integration:cc2cff65-84f2-443c-a627-7e14488a2de7: 0 interval(s), unmatched=0.0m
+[2026-11-24T16:54:54] [verbose] client-integration:ea412abf-9b89-4d00-941a-68d6f0fb03f7: 224 events loaded
+[2026-11-24T16:54:54] [verbose] client-integration:ea412abf-9b89-4d00-941a-68d6f0fb03f7: 0 interval(s), unmatched=0.0m
+[2026-11-24T16:54:54] [verbose] client-integration:ed941687-90f3-4615-baf8-66a589e8f4a7: 377 events loaded
+[2026-11-24T16:54:54] [verbose] client-integration:ed941687-90f3-4615-baf8-66a589e8f4a7: 0 interval(s), unmatched=0.0m
+[2026-11-24T16:54:54] [verbose] member-management:2ee6ca0d-5608-40fd-b917-499b52712207: 36 events loaded
+[2026-11-24T16:54:54] [verbose] member-management:2ee6ca0d-5608-40fd-b917-499b52712207: 0 interval(s), unmatched=0.0m
+[2026-11-24T16:54:54] [verbose] member-management:3ac82b31-5fb8-47bf-8b86-28bcf7ae028b: 63 events loaded
+[2026-11-24T16:54:54] [verbose] member-management:3ac82b31-5fb8-47bf-8b86-28bcf7ae028b: 0 interval(s), unmatched=0.0m
+[2026-11-24T16:54:54] [verbose] member-management:b98f5ba2-518b-4d86-bdc2-535ea9cf8522: 79 events loaded
+[2026-11-24T16:54:54] [verbose] member-management:b98f5ba2-518b-4d86-bdc2-535ea9cf8522: 0 interval(s), unmatched=0.0m
+[2026-11-24T16:54:54] [verbose] z5Connectapi:154d98a5-ed6e-42e2-adf9-8f1133be5c99: 93 events loaded
+[2026-11-24T16:54:54] [verbose] z5Connectapi:154d98a5-ed6e-42e2-adf9-8f1133be5c99: 76 interval(s), unmatched=0.0m
+[2026-11-24T16:54:54] [verbose] z5Connectapi:409efdd6-eca6-4e61-8427-ccb3a7cfafd4: 917 events loaded
+[2026-11-24T16:54:54] [verbose] z5Connectapi:409efdd6-eca6-4e61-8427-ccb3a7cfafd4: 457 interval(s), unmatched=0.0m
+[2026-11-24T16:54:54] [verbose] z5Connectapi:52954285-dadd-4d3d-b84d-9f11a1028870: 63 events loaded
+[2026-11-24T16:54:54] [verbose] z5Connectapi:52954285-dadd-4d3d-b84d-9f11a1028870: 0 interval(s), unmatched=0.0m
+[2026-11-24T16:54:54] [verbose] z5Connectapi:6f8f24dd-3f79-488f-acd3-e2d747fffe54: 345 events loaded
+[2026-11-24T16:54:54] [verbose] z5Connectapi:6f8f24dd-3f79-488f-acd3-e2d747fffe54: 0 interval(s), unmatched=0.0m
+[2026-11-24T16:54:54] [verbose] z5Connectapi:79367811-98cd-4fb1-bec4-a1670af1b1fe: 96 events loaded
+[2026-11-24T16:54:54] [verbose] z5Connectapi:79367811-98cd-4fb1-bec4-a1670af1b1fe: 0 interval(s), unmatched=0.0m
+[2026-11-24T16:54:54] [verbose] z5Connectapi:97f04021-4499-45ab-8197-1b16c08fb371: 38 events loaded
+[2026-11-24T16:54:54] [verbose] z5Connectapi:97f04021-4499-45ab-8197-1b16c08fb371: 0 interval(s), unmatched=0.0m
+[2026-11-24T16:54:54] [verbose] z5Connectapi:9ac7c23b-8216-434f-a9f8-448a87ff696e: 267 events loaded
+[2026-11-24T16:54:54] [verbose] z5Connectapi:9ac7c23b-8216-434f-a9f8-448a87ff696e: 0 interval(s), unmatched=0.0m
+[2026-11-24T16:54:54] [verbose] z5Connectapi:a63b58b6-6086-4eb6-9aa5-b0b3c2d1b93c: 957 events loaded
+[2026-11-24T16:54:54] [verbose] z5Connectapi:a63b58b6-6086-4eb6-9aa5-b0b3c2d1b93c: 0 interval(s), unmatched=0.0m
+[2026-11-24T16:54:54] [verbose] z5Connectapi:b3df9209-a110-4fb3-8a8d-3c61b6303837: 35 events loaded
+[2026-11-24T16:54:54] [verbose] z5Connectapi:b3df9209-a110-4fb3-8a8d-3c61b6303837: 0 interval(s), unmatched=0.0m
+[2026-11-24T16:54:54] [verbose] z5Connectapi:c26bf6a5-9a04-482f-af29-c5a31b3d9aae: 67 events loaded
+[2026-11-24T16:54:54] [verbose] z5Connectapi:c26bf6a5-9a04-482f-af29-c5a31b3d9aae: 0 interval(s), unmatched=0.0m
+[2026-11-24T16:54:54] [verbose] z5Connectapi:cf4a8726-8880-47ea-95e9-a8a3ee47fec0: 260 events loaded
+[2026-11-24T16:54:54] [verbose] z5Connectapi:cf4a8726-8880-47ea-95e9-a8a3ee47fec0: 0 interval(s), unmatched=0.0m
+[2026-11-24T16:54:54] [verbose] z5Connectapi:daa9985b-2969-4e6a-b95e-b14fa08b7d8b: 215 events loaded
+[2026-11-24T16:54:54] [verbose] z5Connectapi:daa9985b-2969-4e6a-b95e-b14fa08b7d8b: 0 interval(s), unmatched=0.0m
+[2026-11-24T16:54:54] [verbose] z5Connectapi:dcb7acd7-f3c9-4ee1-9050-4804ab47ad50: 131 events loaded
+[2026-11-24T16:54:54] [verbose] z5Connectapi:dcb7acd7-f3c9-4ee1-9050-4804ab47ad50: 0 interval(s), unmatched=0.0m
+[2026-11-24T16:54:54] [verbose] z5Connectapi:ea3f3565-3794-4609-8e2d-d5c0ab385a4c: 883 events loaded
+[2026-11-24T16:54:54] [verbose] z5Connectapi:ea3f3565-3794-4609-8e2d-d5c0ab385a4c: 0 interval(s), unmatched=0.0m
+[2026-11-24T16:54:54] [verbose] zAnalytics-service:17c074b2-e65f-4289-a470-00d4f2ab0079: 103 events loaded
+[2026-11-24T16:54:54] [verbose] zAnalytics-service:17c074b2-e65f-4289-a470-00d4f2ab0079: 0 interval(s), unmatched=0.0m
+[2026-11-24T16:54:54] [verbose] zAnalytics-service:1d8880d4-10da-4167-ae33-108bdf4923cb: 149 events loaded
+[2026-11-24T16:54:54] [verbose] zAnalytics-service:1d8880d4-10da-4167-ae33-108bdf4923cb: 0 interval(s), unmatched=0.0m
+[2026-11-24T16:54:54] [verbose] zAnalytics-service:2abc06bc-8b44-40a0-a000-d764a361c438: 66 events loaded
+[2026-11-24T16:54:54] [verbose] zAnalytics-service:2abc06bc-8b44-40a0-a000-d764a361c438: 0 interval(s), unmatched=0.0m
+[2026-11-24T16:54:54] [verbose] zAnalytics-service:323099cf-e31c-4220-a4a5-526883bbd380: 147 events loaded
+[2026-11-24T16:54:54] [verbose] zAnalytics-service:323099cf-e31c-4220-a4a5-526883bbd380: 0 interval(s), unmatched=0.0m
+[2026-11-24T16:54:54] [verbose] zAnalytics-service:568503b7-7b3c-41b9-9177-501659d87dce: 61 events loaded
+[2026-11-24T16:54:54] [verbose] zAnalytics-service:568503b7-7b3c-41b9-9177-501659d87dce: 0 interval(s), unmatched=0.0m
+[2026-11-24T16:54:55] [verbose] zAnalytics-service:6f69bb08-0dfb-4518-919b-af8cab62d5f0: 238 events loaded
+[2026-11-24T16:54:55] [verbose] zAnalytics-service:6f69bb08-0dfb-4518-919b-af8cab62d5f0: 0 interval(s), unmatched=0.0m
+[2026-11-24T16:54:55] [verbose] zAnalytics-service:b119e5e8-a5e3-47ec-b88f-177adb0250ca: 951 events loaded
+[2026-11-24T16:54:55] [verbose] zAnalytics-service:b119e5e8-a5e3-47ec-b88f-177adb0250ca: 0 interval(s), unmatched=0.0m
+[2026-11-24T16:54:55] [verbose] zAnalytics-service:ba787a5d-0df4-4453-bb31-fc4f1b1ddc17: 53 events loaded
+[2026-11-24T16:54:55] [verbose] zAnalytics-service:ba787a5d-0df4-4453-bb31-fc4f1b1ddc17: 0 interval(s), unmatched=0.0m
+[2026-11-24T16:54:55] [verbose] zAnalytics-service:cfd1d113-e214-40ed-853a-21cf899454f5: 417 events loaded
+[2026-11-24T16:54:55] [verbose] zAnalytics-service:cfd1d113-e214-40ed-853a-21cf899454f5: 0 interval(s), unmatched=0.0m
+[2026-11-24T16:55:00] [DRY RUN] Would log 70m on ZC-2693 (2026-11-24): Removed remaining references to legacy user/user_profile/user_role/user_alt tables in updateLoginGroupId and began converting update paths (password, MFA, lockout, EBIX sync) to single-write to app_user.
+[2026-11-24T16:55:00] Done. submitted=1 failed=0 unmatched_minutes=0
+[2026-11-24T16:55:14] DRY RUN: no worklogs will be submitted to Jira and no state will be saved
+[2026-11-24T16:55:19] [DRY RUN] Would log 70m on ZC-2693 (2026-11-24): Removed legacy user/user_profile/user_role/user_alt table references and converted login group, password, MFA, lockout, and EBIX sync updates to write only to app_user.
+[2026-11-24T16:55:19] Done. submitted=1 failed=0 unmatched_minutes=0
+[2026-11-24T16:55:38] ERROR: config.json 'enabled_projects' must be a non-empty list
+[2026-11-24T16:55:38] ERROR: credentials.json missing required key(s): email, api_token
+[2026-11-24T16:58:14] DRY RUN: no worklogs will be submitted to Jira and no state will be saved
+[2026-11-24T16:58:20] [DRY RUN] Would log 80m on ZC-2693 (2026-11-24): Single-write cutover to app_user extended across update paths (password/MFA/lockout/EBIX-sync/CSR edits) and dead-code method, plus added an API test checklist doc.
+[2026-11-24T16:58:20] Done. submitted=1 failed=0 unmatched_minutes=0
+[2026-11-24T17:06:47] DRY RUN: no worklogs will be submitted to Jira and no state will be saved
+[2026-11-24T17:06:47] [verbose] claims-manager:0eb62388-bfbd-4588-a952-b6c53c0b0a77: 810 events loaded
+[2026-11-24T17:06:47] [verbose] claims-manager:0eb62388-bfbd-4588-a952-b6c53c0b0a77: 0 interval(s), unmatched=0.0m
+[2026-11-24T17:06:47] [verbose] claims-manager:2eeeaf79-29e1-47d9-92c3-2e9d373f045c: 49 events loaded
+[2026-11-24T17:06:47] [verbose] claims-manager:2eeeaf79-29e1-47d9-92c3-2e9d373f045c: 0 interval(s), unmatched=0.0m
+[2026-11-24T17:06:47] [verbose] claims-manager:9f129cd0-22ce-47e1-bdaf-e36043fb7d0c: 162 events loaded
+[2026-11-24T17:06:47] [verbose] claims-manager:9f129cd0-22ce-47e1-bdaf-e36043fb7d0c: 0 interval(s), unmatched=0.0m
+[2026-11-24T17:06:47] [verbose] claims-manager:cfa02567-afe4-48e7-89ad-299a838d4676: 294 events loaded
+[2026-11-24T17:06:47] [verbose] claims-manager:cfa02567-afe4-48e7-89ad-299a838d4676: 0 interval(s), unmatched=0.0m
+[2026-11-24T17:06:47] [verbose] claims-manager:d6f6804e-79e8-41af-bfc1-26a51a62457e: 298 events loaded
+[2026-11-24T17:06:47] [verbose] claims-manager:d6f6804e-79e8-41af-bfc1-26a51a62457e: 0 interval(s), unmatched=0.0m
+[2026-11-24T17:06:47] [verbose] claims-manager:ff80b595-1109-4525-9f4a-e93e858d7ac8: 62 events loaded
+[2026-11-24T17:06:47] [verbose] claims-manager:ff80b595-1109-4525-9f4a-e93e858d7ac8: 0 interval(s), unmatched=0.0m
+[2026-11-24T17:06:47] [verbose] client-integration:cc2cff65-84f2-443c-a627-7e14488a2de7: 25 events loaded
+[2026-11-24T17:06:47] [verbose] client-integration:cc2cff65-84f2-443c-a627-7e14488a2de7: 0 interval(s), unmatched=0.0m
+[2026-11-24T17:06:47] [verbose] client-integration:ea412abf-9b89-4d00-941a-68d6f0fb03f7: 224 events loaded
+[2026-11-24T17:06:47] [verbose] client-integration:ea412abf-9b89-4d00-941a-68d6f0fb03f7: 0 interval(s), unmatched=0.0m
+[2026-11-24T17:06:47] [verbose] client-integration:ed941687-90f3-4615-baf8-66a589e8f4a7: 377 events loaded
+[2026-11-24T17:06:47] [verbose] client-integration:ed941687-90f3-4615-baf8-66a589e8f4a7: 0 interval(s), unmatched=0.0m
+[2026-11-24T17:06:47] [verbose] member-management:2ee6ca0d-5608-40fd-b917-499b52712207: 36 events loaded
+[2026-11-24T17:06:47] [verbose] member-management:2ee6ca0d-5608-40fd-b917-499b52712207: 0 interval(s), unmatched=0.0m
+[2026-11-24T17:06:47] [verbose] member-management:3ac82b31-5fb8-47bf-8b86-28bcf7ae028b: 63 events loaded
+[2026-11-24T17:06:47] [verbose] member-management:3ac82b31-5fb8-47bf-8b86-28bcf7ae028b: 0 interval(s), unmatched=0.0m
+[2026-11-24T17:06:47] [verbose] member-management:b98f5ba2-518b-4d86-bdc2-535ea9cf8522: 79 events loaded
+[2026-11-24T17:06:47] [verbose] member-management:b98f5ba2-518b-4d86-bdc2-535ea9cf8522: 0 interval(s), unmatched=0.0m
+[2026-11-24T17:06:47] [verbose] z5Connectapi:154d98a5-ed6e-42e2-adf9-8f1133be5c99: 115 events loaded
+[2026-11-24T17:06:47] [verbose] z5Connectapi:154d98a5-ed6e-42e2-adf9-8f1133be5c99: 97 interval(s), unmatched=0.1m
+[2026-11-24T17:06:47] [verbose] z5Connectapi:409efdd6-eca6-4e61-8427-ccb3a7cfafd4: 917 events loaded
+[2026-11-24T17:06:47] [verbose] z5Connectapi:409efdd6-eca6-4e61-8427-ccb3a7cfafd4: 457 interval(s), unmatched=0.0m
+[2026-11-24T17:06:47] [verbose] z5Connectapi:52954285-dadd-4d3d-b84d-9f11a1028870: 63 events loaded
+[2026-11-24T17:06:47] [verbose] z5Connectapi:52954285-dadd-4d3d-b84d-9f11a1028870: 0 interval(s), unmatched=0.0m
+[2026-11-24T17:06:47] [verbose] z5Connectapi:6f8f24dd-3f79-488f-acd3-e2d747fffe54: 345 events loaded
+[2026-11-24T17:06:47] [verbose] z5Connectapi:6f8f24dd-3f79-488f-acd3-e2d747fffe54: 0 interval(s), unmatched=0.0m
+[2026-11-24T17:06:47] [verbose] z5Connectapi:79367811-98cd-4fb1-bec4-a1670af1b1fe: 96 events loaded
+[2026-11-24T17:06:47] [verbose] z5Connectapi:79367811-98cd-4fb1-bec4-a1670af1b1fe: 0 interval(s), unmatched=0.0m
+[2026-11-24T17:06:47] [verbose] z5Connectapi:97f04021-4499-45ab-8197-1b16c08fb371: 38 events loaded
+[2026-11-24T17:06:47] [verbose] z5Connectapi:97f04021-4499-45ab-8197-1b16c08fb371: 0 interval(s), unmatched=0.0m
+[2026-11-24T17:06:47] [verbose] z5Connectapi:9ac7c23b-8216-434f-a9f8-448a87ff696e: 267 events loaded
+[2026-11-24T17:06:47] [verbose] z5Connectapi:9ac7c23b-8216-434f-a9f8-448a87ff696e: 0 interval(s), unmatched=0.0m
+[2026-11-24T17:06:47] [verbose] z5Connectapi:a63b58b6-6086-4eb6-9aa5-b0b3c2d1b93c: 957 events loaded
+[2026-11-24T17:06:47] [verbose] z5Connectapi:a63b58b6-6086-4eb6-9aa5-b0b3c2d1b93c: 0 interval(s), unmatched=0.0m
+[2026-11-24T17:06:47] [verbose] z5Connectapi:b3df9209-a110-4fb3-8a8d-3c61b6303837: 35 events loaded
+[2026-11-24T17:06:47] [verbose] z5Connectapi:b3df9209-a110-4fb3-8a8d-3c61b6303837: 0 interval(s), unmatched=0.0m
+[2026-11-24T17:06:47] [verbose] z5Connectapi:c26bf6a5-9a04-482f-af29-c5a31b3d9aae: 67 events loaded
+[2026-11-24T17:06:47] [verbose] z5Connectapi:c26bf6a5-9a04-482f-af29-c5a31b3d9aae: 0 interval(s), unmatched=0.0m
+[2026-11-24T17:06:47] [verbose] z5Connectapi:cf4a8726-8880-47ea-95e9-a8a3ee47fec0: 260 events loaded
+[2026-11-24T17:06:47] [verbose] z5Connectapi:cf4a8726-8880-47ea-95e9-a8a3ee47fec0: 0 interval(s), unmatched=0.0m
+[2026-11-24T17:06:47] [verbose] z5Connectapi:daa9985b-2969-4e6a-b95e-b14fa08b7d8b: 215 events loaded
+[2026-11-24T17:06:47] [verbose] z5Connectapi:daa9985b-2969-4e6a-b95e-b14fa08b7d8b: 0 interval(s), unmatched=0.0m
+[2026-11-24T17:06:47] [verbose] z5Connectapi:dcb7acd7-f3c9-4ee1-9050-4804ab47ad50: 131 events loaded
+[2026-11-24T17:06:47] [verbose] z5Connectapi:dcb7acd7-f3c9-4ee1-9050-4804ab47ad50: 0 interval(s), unmatched=0.0m
+[2026-11-24T17:06:47] [verbose] z5Connectapi:ea3f3565-3794-4609-8e2d-d5c0ab385a4c: 883 events loaded
+[2026-11-24T17:06:47] [verbose] z5Connectapi:ea3f3565-3794-4609-8e2d-d5c0ab385a4c: 0 interval(s), unmatched=0.0m
+[2026-11-24T17:06:47] [verbose] zAnalytics-service:17c074b2-e65f-4289-a470-00d4f2ab0079: 103 events loaded
+[2026-11-24T17:06:47] [verbose] zAnalytics-service:17c074b2-e65f-4289-a470-00d4f2ab0079: 0 interval(s), unmatched=0.0m
+[2026-11-24T17:06:47] [verbose] zAnalytics-service:1d8880d4-10da-4167-ae33-108bdf4923cb: 149 events loaded
+[2026-11-24T17:06:47] [verbose] zAnalytics-service:1d8880d4-10da-4167-ae33-108bdf4923cb: 0 interval(s), unmatched=0.0m
+[2026-11-24T17:06:47] [verbose] zAnalytics-service:2abc06bc-8b44-40a0-a000-d764a361c438: 66 events loaded
+[2026-11-24T17:06:47] [verbose] zAnalytics-service:2abc06bc-8b44-40a0-a000-d764a361c438: 0 interval(s), unmatched=0.0m
+[2026-11-24T17:06:47] [verbose] zAnalytics-service:323099cf-e31c-4220-a4a5-526883bbd380: 147 events loaded
+[2026-11-24T17:06:47] [verbose] zAnalytics-service:323099cf-e31c-4220-a4a5-526883bbd380: 0 interval(s), unmatched=0.0m
+[2026-11-24T17:06:47] [verbose] zAnalytics-service:568503b7-7b3c-41b9-9177-501659d87dce: 61 events loaded
+[2026-11-24T17:06:47] [verbose] zAnalytics-service:568503b7-7b3c-41b9-9177-501659d87dce: 0 interval(s), unmatched=0.0m
+[2026-11-24T17:06:47] [verbose] zAnalytics-service:6f69bb08-0dfb-4518-919b-af8cab62d5f0: 238 events loaded
+[2026-11-24T17:06:47] [verbose] zAnalytics-service:6f69bb08-0dfb-4518-919b-af8cab62d5f0: 0 interval(s), unmatched=0.0m
+[2026-11-24T17:06:47] [verbose] zAnalytics-service:b119e5e8-a5e3-47ec-b88f-177adb0250ca: 951 events loaded
+[2026-11-24T17:06:47] [verbose] zAnalytics-service:b119e5e8-a5e3-47ec-b88f-177adb0250ca: 0 interval(s), unmatched=0.0m
+[2026-11-24T17:06:47] [verbose] zAnalytics-service:ba787a5d-0df4-4453-bb31-fc4f1b1ddc17: 53 events loaded
+[2026-11-24T17:06:47] [verbose] zAnalytics-service:ba787a5d-0df4-4453-bb31-fc4f1b1ddc17: 0 interval(s), unmatched=0.0m
+[2026-11-24T17:06:47] [verbose] zAnalytics-service:cfd1d113-e214-40ed-853a-21cf899454f5: 417 events loaded
+[2026-11-24T17:06:47] [verbose] zAnalytics-service:cfd1d113-e214-40ed-853a-21cf899454f5: 0 interval(s), unmatched=0.0m
+[2026-11-24T17:06:53] [DRY RUN] Would log 80m on ZC-2693 (2026-11-24): Implemented single-write cutover to app_user for login-group updates, removing legacy user/user_alt/user_profile/user_role references; verified build still compiles.
+[2026-11-24T17:06:53] Done. submitted=1 failed=0 dropped=0 unmatched_minutes=0
+[2026-11-24T17:07:12] DRY RUN: no worklogs will be submitted to Jira and no state will be saved
+[2026-11-24T17:07:19] [DRY RUN] Would log 80m on ZC-2693 (2026-11-24): Converted the application's login group update logic to write only to the new app_user table, removing legacy user-table references, and verified the build still compiles.
+[2026-11-24T17:07:19] Done. submitted=1 failed=0 dropped=0 unmatched_minutes=0
+[2026-11-24T17:07:55] Another run is already in progress; exiting.
+[2026-11-24T17:07:56] DRY RUN: no worklogs will be submitted to Jira and no state will be saved
+[2026-11-24T17:08:03] [DRY RUN] Would log 80m on ZC-2693 (2026-11-24): Single-write migration to app_user extended to update paths (password, MFA, lockout, EBIX sync, CSR edits) and registration, with a required FK retarget script prepared.
+[2026-11-24T17:08:03] Done. submitted=1 failed=0 dropped=0 unmatched_minutes=0
+[2026-11-24T17:08:25] WARN: 2026-11-24 new 120m + already-logged 400m exceeds 7h cap, scaling new activity by 0.17
+[2026-11-24T17:08:25] WARN: 2026-11-24 already at/over 7h cap from earlier run(s) (500m); dropping 120m of new activity
+[2026-11-24T17:09:09] WARN: 2026-11-24 new 120m + already-logged 400m exceeds 7h cap, scaling new activity by 0.17
+[2026-11-24T17:09:09] WARN: 2026-11-24 already at/over 7h cap from earlier run(s) (500m); dropping 120m of new activity
+[2026-11-24T17:09:09] WARN: 2026-11-24 new 500m + already-logged 0m exceeds 7h cap, scaling new activity by 0.84
+[2026-11-24T17:09:23] DRY RUN: no worklogs will be submitted to Jira and no state will be saved
+[2026-11-24T17:09:23] [verbose] claims-manager:0eb62388-bfbd-4588-a952-b6c53c0b0a77: 810 events loaded
+[2026-11-24T17:09:23] [verbose] claims-manager:0eb62388-bfbd-4588-a952-b6c53c0b0a77: 0 interval(s), unmatched=0.0m
+[2026-11-24T17:09:23] [verbose] claims-manager:2eeeaf79-29e1-47d9-92c3-2e9d373f045c: 49 events loaded
+[2026-11-24T17:09:23] [verbose] claims-manager:2eeeaf79-29e1-47d9-92c3-2e9d373f045c: 0 interval(s), unmatched=0.0m
+[2026-11-24T17:09:23] [verbose] claims-manager:9f129cd0-22ce-47e1-bdaf-e36043fb7d0c: 162 events loaded
+[2026-11-24T17:09:23] [verbose] claims-manager:9f129cd0-22ce-47e1-bdaf-e36043fb7d0c: 0 interval(s), unmatched=0.0m
+[2026-11-24T17:09:23] [verbose] claims-manager:cfa02567-afe4-48e7-89ad-299a838d4676: 294 events loaded
+[2026-11-24T17:09:23] [verbose] claims-manager:cfa02567-afe4-48e7-89ad-299a838d4676: 0 interval(s), unmatched=0.0m
+[2026-11-24T17:09:23] [verbose] claims-manager:d6f6804e-79e8-41af-bfc1-26a51a62457e: 298 events loaded
+[2026-11-24T17:09:23] [verbose] claims-manager:d6f6804e-79e8-41af-bfc1-26a51a62457e: 0 interval(s), unmatched=0.0m
+[2026-11-24T17:09:23] [verbose] claims-manager:ff80b595-1109-4525-9f4a-e93e858d7ac8: 62 events loaded
+[2026-11-24T17:09:23] [verbose] claims-manager:ff80b595-1109-4525-9f4a-e93e858d7ac8: 0 interval(s), unmatched=0.0m
+[2026-11-24T17:09:23] [verbose] client-integration:cc2cff65-84f2-443c-a627-7e14488a2de7: 25 events loaded
+[2026-11-24T17:09:23] [verbose] client-integration:cc2cff65-84f2-443c-a627-7e14488a2de7: 0 interval(s), unmatched=0.0m
+[2026-11-24T17:09:23] [verbose] client-integration:ea412abf-9b89-4d00-941a-68d6f0fb03f7: 224 events loaded
+[2026-11-24T17:09:23] [verbose] client-integration:ea412abf-9b89-4d00-941a-68d6f0fb03f7: 0 interval(s), unmatched=0.0m
+[2026-11-24T17:09:23] [verbose] client-integration:ed941687-90f3-4615-baf8-66a589e8f4a7: 377 events loaded
+[2026-11-24T17:09:23] [verbose] client-integration:ed941687-90f3-4615-baf8-66a589e8f4a7: 0 interval(s), unmatched=0.0m
+[2026-11-24T17:09:23] [verbose] member-management:2ee6ca0d-5608-40fd-b917-499b52712207: 36 events loaded
+[2026-11-24T17:09:23] [verbose] member-management:2ee6ca0d-5608-40fd-b917-499b52712207: 0 interval(s), unmatched=0.0m
+[2026-11-24T17:09:23] [verbose] member-management:3ac82b31-5fb8-47bf-8b86-28bcf7ae028b: 63 events loaded
+[2026-11-24T17:09:23] [verbose] member-management:3ac82b31-5fb8-47bf-8b86-28bcf7ae028b: 0 interval(s), unmatched=0.0m
+[2026-11-24T17:09:23] [verbose] member-management:b98f5ba2-518b-4d86-bdc2-535ea9cf8522: 79 events loaded
+[2026-11-24T17:09:23] [verbose] member-management:b98f5ba2-518b-4d86-bdc2-535ea9cf8522: 0 interval(s), unmatched=0.0m
+[2026-11-24T17:09:23] [verbose] z5Connectapi:154d98a5-ed6e-42e2-adf9-8f1133be5c99: 115 events loaded
+[2026-11-24T17:09:23] [verbose] z5Connectapi:154d98a5-ed6e-42e2-adf9-8f1133be5c99: 97 interval(s), unmatched=0.1m
+[2026-11-24T17:09:23] [verbose] z5Connectapi:409efdd6-eca6-4e61-8427-ccb3a7cfafd4: 917 events loaded
+[2026-11-24T17:09:23] [verbose] z5Connectapi:409efdd6-eca6-4e61-8427-ccb3a7cfafd4: 457 interval(s), unmatched=0.0m
+[2026-11-24T17:09:23] [verbose] z5Connectapi:52954285-dadd-4d3d-b84d-9f11a1028870: 63 events loaded
+[2026-11-24T17:09:23] [verbose] z5Connectapi:52954285-dadd-4d3d-b84d-9f11a1028870: 0 interval(s), unmatched=0.0m
+[2026-11-24T17:09:23] [verbose] z5Connectapi:6f8f24dd-3f79-488f-acd3-e2d747fffe54: 345 events loaded
+[2026-11-24T17:09:23] [verbose] z5Connectapi:6f8f24dd-3f79-488f-acd3-e2d747fffe54: 0 interval(s), unmatched=0.0m
+[2026-11-24T17:09:23] [verbose] z5Connectapi:79367811-98cd-4fb1-bec4-a1670af1b1fe: 96 events loaded
+[2026-11-24T17:09:23] [verbose] z5Connectapi:79367811-98cd-4fb1-bec4-a1670af1b1fe: 0 interval(s), unmatched=0.0m
+[2026-11-24T17:09:23] [verbose] z5Connectapi:97f04021-4499-45ab-8197-1b16c08fb371: 38 events loaded
+[2026-11-24T17:09:23] [verbose] z5Connectapi:97f04021-4499-45ab-8197-1b16c08fb371: 0 interval(s), unmatched=0.0m
+[2026-11-24T17:09:23] [verbose] z5Connectapi:9ac7c23b-8216-434f-a9f8-448a87ff696e: 267 events loaded
+[2026-11-24T17:09:23] [verbose] z5Connectapi:9ac7c23b-8216-434f-a9f8-448a87ff696e: 0 interval(s), unmatched=0.0m
+[2026-11-24T17:09:23] [verbose] z5Connectapi:a63b58b6-6086-4eb6-9aa5-b0b3c2d1b93c: 957 events loaded
+[2026-11-24T17:09:23] [verbose] z5Connectapi:a63b58b6-6086-4eb6-9aa5-b0b3c2d1b93c: 0 interval(s), unmatched=0.0m
+[2026-11-24T17:09:23] [verbose] z5Connectapi:b3df9209-a110-4fb3-8a8d-3c61b6303837: 35 events loaded
+[2026-11-24T17:09:23] [verbose] z5Connectapi:b3df9209-a110-4fb3-8a8d-3c61b6303837: 0 interval(s), unmatched=0.0m
+[2026-11-24T17:09:23] [verbose] z5Connectapi:c26bf6a5-9a04-482f-af29-c5a31b3d9aae: 67 events loaded
+[2026-11-24T17:09:23] [verbose] z5Connectapi:c26bf6a5-9a04-482f-af29-c5a31b3d9aae: 0 interval(s), unmatched=0.0m
+[2026-11-24T17:09:24] [verbose] z5Connectapi:cf4a8726-8880-47ea-95e9-a8a3ee47fec0: 260 events loaded
+[2026-11-24T17:09:24] [verbose] z5Connectapi:cf4a8726-8880-47ea-95e9-a8a3ee47fec0: 0 interval(s), unmatched=0.0m
+[2026-11-24T17:09:24] [verbose] z5Connectapi:daa9985b-2969-4e6a-b95e-b14fa08b7d8b: 215 events loaded
+[2026-11-24T17:09:24] [verbose] z5Connectapi:daa9985b-2969-4e6a-b95e-b14fa08b7d8b: 0 interval(s), unmatched=0.0m
+[2026-11-24T17:09:24] [verbose] z5Connectapi:dcb7acd7-f3c9-4ee1-9050-4804ab47ad50: 131 events loaded
+[2026-11-24T17:09:24] [verbose] z5Connectapi:dcb7acd7-f3c9-4ee1-9050-4804ab47ad50: 0 interval(s), unmatched=0.0m
+[2026-11-24T17:09:24] [verbose] z5Connectapi:ea3f3565-3794-4609-8e2d-d5c0ab385a4c: 883 events loaded
+[2026-11-24T17:09:24] [verbose] z5Connectapi:ea3f3565-3794-4609-8e2d-d5c0ab385a4c: 0 interval(s), unmatched=0.0m
+[2026-11-24T17:09:24] [verbose] zAnalytics-service:17c074b2-e65f-4289-a470-00d4f2ab0079: 103 events loaded
+[2026-11-24T17:09:24] [verbose] zAnalytics-service:17c074b2-e65f-4289-a470-00d4f2ab0079: 0 interval(s), unmatched=0.0m
+[2026-11-24T17:09:24] [verbose] zAnalytics-service:1d8880d4-10da-4167-ae33-108bdf4923cb: 149 events loaded
+[2026-11-24T17:09:24] [verbose] zAnalytics-service:1d8880d4-10da-4167-ae33-108bdf4923cb: 0 interval(s), unmatched=0.0m
+[2026-11-24T17:09:24] [verbose] zAnalytics-service:2abc06bc-8b44-40a0-a000-d764a361c438: 66 events loaded
+[2026-11-24T17:09:24] [verbose] zAnalytics-service:2abc06bc-8b44-40a0-a000-d764a361c438: 0 interval(s), unmatched=0.0m
+[2026-11-24T17:09:24] [verbose] zAnalytics-service:323099cf-e31c-4220-a4a5-526883bbd380: 147 events loaded
+[2026-11-24T17:09:24] [verbose] zAnalytics-service:323099cf-e31c-4220-a4a5-526883bbd380: 0 interval(s), unmatched=0.0m
+[2026-11-24T17:09:24] [verbose] zAnalytics-service:568503b7-7b3c-41b9-9177-501659d87dce: 61 events loaded
+[2026-11-24T17:09:24] [verbose] zAnalytics-service:568503b7-7b3c-41b9-9177-501659d87dce: 0 interval(s), unmatched=0.0m
+[2026-11-24T17:09:24] [verbose] zAnalytics-service:6f69bb08-0dfb-4518-919b-af8cab62d5f0: 238 events loaded
+[2026-11-24T17:09:24] [verbose] zAnalytics-service:6f69bb08-0dfb-4518-919b-af8cab62d5f0: 0 interval(s), unmatched=0.0m
+[2026-11-24T17:09:24] [verbose] zAnalytics-service:b119e5e8-a5e3-47ec-b88f-177adb0250ca: 951 events loaded
+[2026-11-24T17:09:24] [verbose] zAnalytics-service:b119e5e8-a5e3-47ec-b88f-177adb0250ca: 0 interval(s), unmatched=0.0m
+[2026-11-24T17:09:24] [verbose] zAnalytics-service:ba787a5d-0df4-4453-bb31-fc4f1b1ddc17: 53 events loaded
+[2026-11-24T17:09:24] [verbose] zAnalytics-service:ba787a5d-0df4-4453-bb31-fc4f1b1ddc17: 0 interval(s), unmatched=0.0m
+[2026-11-24T17:09:24] [verbose] zAnalytics-service:cfd1d113-e214-40ed-853a-21cf899454f5: 417 events loaded
+[2026-11-24T17:09:24] [verbose] zAnalytics-service:cfd1d113-e214-40ed-853a-21cf899454f5: 0 interval(s), unmatched=0.0m
+[2026-11-24T17:09:30] [DRY RUN] Would log 80m on ZC-2693 (2026-11-24): Posted a single-sentence update to a Jira ticket? Let me write the summary directly.
+
+Removed legacy user/user_profile/user_role/user_alt references from the updateLoginGroupId method and verified the project compiles, continuing the database write path migration to app_user.
+[2026-11-24T17:09:30] Done. submitted=1 failed=0 dropped=0 unmatched_minutes=0
+[2026-11-24T17:17:03] WARN: 2026-11-24 new 120m + already-logged 400m exceeds 7h cap, scaling new activity by 0.17
+[2026-11-24T17:17:03] WARN: 2026-11-24 already at/over 7h cap from earlier run(s) (500m); dropping 120m of new activity
+[2026-11-24T17:17:03] WARN: 2026-11-24 new 500m + already-logged 0m exceeds 7h cap, scaling new activity by 0.84
