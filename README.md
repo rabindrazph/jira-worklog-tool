@@ -123,3 +123,90 @@ The worklog id for `--void` comes from `logs/<TICKET>/activity.log`, which recor
 - **"WARN: no transcript dir for project '<name>'"** — you haven't run Claude Code inside `<BASE_DIR>/<name>/` yet, so there's no transcript history to scan.
 - **"Another run is already in progress; exiting."** — a previous invocation (likely from cron) is still running; this is expected and safe, not an error.
 - **Nothing gets billed** — check the branch name you were working on actually contains a real Jira ticket key (e.g. `feature/ZC-123-thing`), and that `ZC` is a real project key in your Jira instance (unknown-looking project prefixes are deliberately ignored).
+
+## Google Calendar worklog tool (optional add-on)
+
+`jira_calendar_worklog.py` is a sibling script: it bills Jira worklogs for your meeting time by reading Google Calendar, instead of Claude Code session transcripts. It reuses this tool's Jira credentials/submission code and shares the same `daily_cap_hours` so the two tools together don't exceed your intended daily ceiling. Same requirements as above (Linux/macOS, Python 3.10+, Jira API token), plus a Google account and a few minutes of one-time setup. Still pure stdlib — no `pip install`.
+
+### 1. Create a Google OAuth client (one-time, in Google Cloud Console)
+
+1. Create or pick a GCP project at https://console.cloud.google.com/.
+2. **APIs & Services → Library** → enable the **Google Calendar API**.
+3. **APIs & Services → OAuth consent screen** → configure it (External is fine; Testing mode is fine for personal use and avoids Google's verification process).
+4. Under the consent screen's "Test users", add your own Google account — required while the app is in Testing mode.
+5. **APIs & Services → Credentials → Create Credentials → OAuth client ID** → Application type **Desktop app**. Note the `client_id` and `client_secret`.
+
+### 2. Run the one-time auth setup
+
+```bash
+cd <BASE_DIR>/jira-worklog-tool
+python3 jira_calendar_worklog.py --setup-google-auth
+```
+
+It'll ask for the `client_id`/`client_secret` from step 1, print a consent URL to open in a browser, and ask you to paste back the redirected URL (or just the `code=` value) after you approve access. On success it writes `<CONFIG_DIR>/google_credentials.json` (chmod 600) — a refresh token that doesn't expire unless you revoke access, so this is a true one-time step.
+
+If it ever says Google returned no refresh token, you've likely already consented once before — revoke access at https://myaccount.google.com/permissions for this app and re-run.
+
+### 3. Find your sprint-reporter accountId (optional, only needed for Tier 2)
+
+Meetings with a direct Jira ticket key or `/browse/TICKET-123` link anywhere in the title/description/location resolve automatically (Tier 1) — most meetings should hit this. For recurring sprint ceremonies named like `Sprint #50` with no direct link, the tool falls back to a Jira search (Tier 2) for the matching sprint ticket, filtered to a specific reporter. Jira Cloud's search needs an **accountId**, not a display name:
+
+```bash
+curl -s -u "you@yourcompany.com:your-api-token" \
+  "https://yourcompany.atlassian.net/rest/api/3/user/search?query=Jasmeen" | python3 -m json.tool
+```
+
+Copy the `accountId` of the right person into `sprint_reporter_account_id` below.
+
+### 4. Create `calendar_config.json`
+
+`<CONFIG_DIR>/calendar_config.json`:
+```json
+{
+  "calendar_id": "primary",
+  "jira_project_keys": ["ZC"],
+  "sprint_reporter_account_id": "paste-the-accountId-from-step-3",
+  "days_back": 1
+}
+```
+
+- `calendar_id` — which Google Calendar to read; `"primary"` is your main calendar.
+- `jira_project_keys` — **real Jira project keys** (not folder names like `enabled_projects` in `config.json`) — used both to validate Tier-1 matches and to narrow the Tier-2 JQL search.
+- `sprint_reporter_account_id` — omit entirely to disable Tier 2 (only direct ticket links/keys will be billed).
+- `days_back` — default lookback window for a run; override per-invocation with `--days-back`.
+
+This file doesn't need `chmod 600` (no secrets in it), but `google_credentials.json` does — it's created with that permission automatically.
+
+### 5. Test it before trusting it
+
+```bash
+python3 jira_calendar_worklog.py --dry-run --verbose --days-back 7
+python3 -m unittest test_calendar_worklog -v
+```
+
+### 6. Schedule it with cron
+
+```
+0 20 * * * /usr/bin/python3 <BASE_DIR>/jira-worklog-tool/jira_calendar_worklog.py
+```
+
+Run it in the evening, after the day's meetings are over — it bills *past* meeting time, like a worklog, not a calendar reminder. It shares `run.lock` with `jira_worklog.py`, so the two never race on the same state file even if a run overlaps.
+
+### Usage reference
+
+```bash
+python3 jira_calendar_worklog.py                               # normal run
+python3 jira_calendar_worklog.py --dry-run --verbose            # preview, no side effects
+python3 jira_calendar_worklog.py --days-back 3                  # scan further back than the default
+python3 jira_calendar_worklog.py --void TICKET WORKLOG_ID       # delete a wrongly-submitted worklog
+python3 jira_calendar_worklog.py --setup-google-auth           # (re-)run the one-time OAuth setup
+```
+
+### Troubleshooting
+
+- **"ERROR: google_credentials.json missing required key(s)..."** — run `--setup-google-auth` first.
+- **No refresh_token returned during setup** — you already consented once; revoke access at https://myaccount.google.com/permissions and re-run.
+- **Sprint lookup always "ambiguous" or "found 0"** — check `jira_project_keys` actually covers the project the sprint ticket lives in, that `sprint_reporter_account_id` is an accountId (not a name — see step 3), and that the sprint ticket's summary really contains `Sprint #<N>` matching the meeting title's number.
+- **A meeting you expected to bill shows up as "unmatched" in the log** — it has no ticket key/link anywhere in its title/description/location, and either didn't match the sprint-number pattern or `sprint_reporter_account_id` isn't configured. This is intentional: there's no fallback ticket, so ambiguous or unresolvable meetings are always skipped rather than guessed at.
+- **An optional meeting you skipped still gets billed** — decline the invite in Google Calendar for that occurrence; only an explicit decline excludes a meeting (`declined_skipped` in the run summary). Just not joining one you accepted (or never responded to) still bills — there's no actual attendance signal available, only your RSVP.
+- **Known v1 limitations** — see `FUTURE_ENHANCEMENTS.md` (declined/tentative meetings still bill if matched, overlapping meetings each bill their full duration, no automated accountId discovery).
