@@ -298,20 +298,32 @@ def run_find_account(base_url: str, auth_header: str, query: str) -> int:
     return 0
 
 
-def fetch_active_sprints(base_url: str, auth_header: str, board_id: int) -> list[dict] | None:
-    url = f"{base_url}/rest/agile/1.0/board/{board_id}/sprint?state=active"
-    req = urllib.request.Request(url, method="GET")
-    req.add_header("Authorization", auth_header)
-    try:
-        with urllib.request.urlopen(req, timeout=30) as resp:
-            data = json.loads(resp.read())
-    except urllib.error.HTTPError as e:
-        jw.log(f"WARN: active sprint lookup rejected ({e.code} {e.read().decode(errors='replace')}) for board {board_id}")
-        return None
-    except (urllib.error.URLError, json.JSONDecodeError) as e:
-        jw.log(f"WARN: active sprint lookup failed ({e}) for board {board_id}")
-        return None
-    return data.get("values", [])
+def fetch_board_sprints(base_url: str, auth_header: str, board_id: int) -> list[dict] | None:
+    """Every active + closed sprint on the board, with its dates, so each
+    meeting can be matched to the sprint that was running *when it
+    happened* (see sprint_number_for_time), not whichever sprint happens
+    to be active when the script runs. Paginated; None on any failure."""
+    sprints: list[dict] = []
+    start_at = 0
+    while True:
+        query = urllib.parse.urlencode({"state": "active,closed", "startAt": start_at, "maxResults": 50})
+        url = f"{base_url}/rest/agile/1.0/board/{board_id}/sprint?{query}"
+        req = urllib.request.Request(url, method="GET")
+        req.add_header("Authorization", auth_header)
+        try:
+            with urllib.request.urlopen(req, timeout=30) as resp:
+                data = json.loads(resp.read())
+        except urllib.error.HTTPError as e:
+            jw.log(f"WARN: sprint lookup rejected ({e.code} {e.read().decode(errors='replace')}) for board {board_id}")
+            return None
+        except (urllib.error.URLError, json.JSONDecodeError) as e:
+            jw.log(f"WARN: sprint lookup failed ({e}) for board {board_id}")
+            return None
+        values = data.get("values", [])
+        sprints.extend(values)
+        if data.get("isLast", True) or not values:
+            return sprints
+        start_at += len(values)
 
 
 # ---------------------------------------------------------------------------
@@ -348,30 +360,72 @@ def resolve_sprint_ticket(sprint_num: str, jira_project_keys: list[str], reporte
     return None
 
 
-def resolve_active_sprint_number(board_id: int, sprint_re: re.Pattern, fetch_fn) -> str | None:
-    """Looks up the board's currently active sprint and extracts its number
-    from the sprint's own name (e.g. 'Sprint 50' -> '50'), for meetings whose
-    title never mentions a sprint number. Zero or multiple active sprints on
-    the board -> None (never guess which one — same caution as
-    resolve_sprint_ticket's ambiguous-match handling)."""
-    sprints = fetch_fn()
-    if sprints is None:
+def sprint_interval(sprint: dict) -> tuple[datetime, datetime | None] | None:
+    """[start, end) a sprint actually covered. A closed sprint ends at its
+    completeDate (when it was really closed), falling back to its planned
+    endDate. An active sprint is open-ended (None) -- it's still running
+    even if it overran its planned endDate. A sprint with no startDate
+    (never started) has no interval."""
+    try:
+        start = jw.parse_ts(sprint["startDate"])
+    except (KeyError, TypeError, ValueError):
         return None
-    if len(sprints) != 1:
-        jw.log(f"WARN: board {board_id} has {len(sprints)} active sprint(s), not 1; can't infer current sprint")
+    if sprint.get("state") == "active":
+        return start, None
+    raw_end = sprint.get("completeDate") or sprint.get("endDate")
+    try:
+        return start, jw.parse_ts(raw_end)
+    except (TypeError, ValueError):
         return None
-    return extract_sprint_number(sprints[0].get("name"), sprint_re)
+
+
+def sprint_number_for_time(sprints: list[dict] | None, when: datetime, sprint_re: re.Pattern) -> str | None:
+    """The number of the board sprint that was running at `when` (e.g. a
+    meeting's start), extracted from the sprint's name ('Sprint 50' ->
+    '50'). Exactly one sprint must cover `when`; several overlapping ->
+    None, never guess -- same caution as resolve_sprint_ticket's
+    ambiguous-match handling.
+
+    Same-day gap rule: sprints here usually get closed one day and the
+    next one "started" in Jira only later on its first day, so a morning
+    meeting on a sprint's first day falls in no sprint at all. If nothing
+    covers `when`, a sprint that starts later on the same *local* day
+    claims it (exactly one such sprint, else None). Any longer gap, or
+    before the board's history -> None."""
+    if not sprints:
+        return None
+    matches = []
+    starts_later_same_day = []
+    when_day = jw.local_date(when)
+    for sprint in sprints:
+        interval = sprint_interval(sprint)
+        if interval is None:
+            continue
+        start, end = interval
+        if start <= when and (end is None or when < end):
+            matches.append(sprint)
+        elif start > when and jw.local_date(start) == when_day:
+            starts_later_same_day.append(sprint)
+    if not matches and len(starts_later_same_day) == 1:
+        jw.vlog(f"{when.isoformat()} is before {starts_later_same_day[0].get('name')!r} was started "
+                f"in Jira, but on its first day; using it")
+        matches = starts_later_same_day
+    if len(matches) != 1:
+        names = ", ".join(str(s.get("name")) for s in matches) or "none"
+        jw.vlog(f"No single board sprint covers {when.isoformat()} (matches: {names})")
+        return None
+    return extract_sprint_number(matches[0].get("name"), sprint_re)
 
 
 def resolve_ticket_for_event(event: dict, known_keys: set[str] | None, cal_cfg: dict,
                               sprint_cache: dict, search_fn, sprint_re: re.Pattern,
-                              active_sprint_number: str | None = None) -> tuple[str | None, str]:
+                              board_sprint_number: str | None = None) -> tuple[str | None, str]:
     """Tier 1: direct ticket key/link in summary+description+location.
     Tier 2: recurring 'Sprint #N' meetings resolved via JQL, narrowed by
     cal_cfg's jira_project_keys + sprint_reporter_account_id.
-    Tier 3: any other meeting falls back to active_sprint_number (the
-    board's currently active sprint, resolved once per run by
-    resolve_active_sprint_number) -- same JQL/cache/ambiguous-skip
+    Tier 3: any other meeting falls back to board_sprint_number (the
+    board sprint that was running when this meeting started, from
+    sprint_number_for_time) -- same JQL/cache/ambiguous-skip
     machinery as Tier 2, just sourced from the board instead of the title.
     Returns (ticket_or_None, reason) — reason is logged, never guessed from."""
     text = " ".join(filter(None, [event.get("summary"), event.get("description"), event.get("location")]))
@@ -382,12 +436,12 @@ def resolve_ticket_for_event(event: dict, known_keys: set[str] | None, cal_cfg: 
     reporter_account_id = cal_cfg.get("sprint_reporter_account_id")
     if reporter_account_id:
         title_sprint_num = extract_sprint_number(event.get("summary"), sprint_re)
-        sprint_num = title_sprint_num or active_sprint_number
+        sprint_num = title_sprint_num or board_sprint_number
         if sprint_num:
             ticket = resolve_sprint_ticket(
                 sprint_num, cal_cfg["jira_project_keys"], reporter_account_id, sprint_cache, search_fn,
             )
-            reason_prefix = "sprint" if title_sprint_num else "current_sprint"
+            reason_prefix = "sprint" if title_sprint_num else "board_sprint"
             if ticket:
                 return ticket, f"{reason_prefix}:{sprint_num}"
             return None, f"{reason_prefix}:{sprint_num}:ambiguous"
@@ -647,12 +701,12 @@ def main(args: argparse.Namespace) -> int:
     sprint_re = re.compile(cal_cfg.get("sprint_title_regex", DEFAULT_SPRINT_RE.pattern), re.IGNORECASE)
     search_fn = lambda jql: jql_search(base_url, auth_header, jql)
 
-    active_sprint_number = None
+    # Fetched once per run; each meeting is then matched to the sprint
+    # that was running when it started (sprint_number_for_time below).
+    board_sprints = None
     board_id = cal_cfg.get("board_id")
     if board_id and cal_cfg.get("sprint_reporter_account_id"):
-        active_sprint_number = resolve_active_sprint_number(
-            board_id, sprint_re, lambda: fetch_active_sprints(base_url, auth_header, board_id),
-        )
+        board_sprints = fetch_board_sprints(base_url, auth_header, board_id)
 
     all_entries = []
     unmatched = 0
@@ -701,7 +755,8 @@ def main(args: argparse.Namespace) -> int:
     for event, billable_start, billable_minutes in resolved:
         event_id = event["id"]
         ticket, reason = resolve_ticket_for_event(
-            event, known_keys, cal_cfg, cal_state["sprint_ticket_cache"], search_fn, sprint_re, active_sprint_number,
+            event, known_keys, cal_cfg, cal_state["sprint_ticket_cache"], search_fn, sprint_re,
+            sprint_number_for_time(board_sprints, event_start_end(event)[0], sprint_re),
         )
         if not ticket:
             unmatched += 1

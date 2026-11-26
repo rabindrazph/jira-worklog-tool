@@ -238,49 +238,111 @@ class CalendarWindow(unittest.TestCase):
         self.assertAlmostEqual((time_max - time_min).total_seconds(), 3 * 86400, delta=5)
 
 
-class ResolveActiveSprintNumber(unittest.TestCase):
-    def test_exact_one_active_sprint_extracts_number(self):
-        fetch_fn = lambda: [{"name": "Sprint 50"}]
-        self.assertEqual(m.resolve_active_sprint_number(127, m.DEFAULT_SPRINT_RE, fetch_fn), "50")
+# Mirrors board 127's real shape: closed sprints have completeDate, the
+# active one is open-ended even past its planned endDate.
+BOARD_SPRINTS = [
+    {"name": "Sprint 49", "state": "closed", "startDate": "2026-10-30T13:02:44.354Z",
+     "endDate": "2026-11-12T15:15:00.000Z", "completeDate": "2026-11-13T10:00:00.000Z"},
+    {"name": "Sprint 50", "state": "active", "startDate": "2026-11-13T14:55:49.000Z",
+     "endDate": "2026-11-26T15:15:00.000Z"},
+]
 
-    def test_zero_active_sprints_is_none(self):
-        fetch_fn = lambda: []
-        self.assertIsNone(m.resolve_active_sprint_number(127, m.DEFAULT_SPRINT_RE, fetch_fn))
 
-    def test_multiple_active_sprints_is_ambiguous_none(self):
-        fetch_fn = lambda: [{"name": "Sprint 50"}, {"name": "Sprint 51"}]
-        self.assertIsNone(m.resolve_active_sprint_number(127, m.DEFAULT_SPRINT_RE, fetch_fn))
+class SprintNumberForTime(unittest.TestCase):
+    def test_meeting_during_closed_sprint_gets_that_sprint(self):
+        self.assertEqual(m.sprint_number_for_time(BOARD_SPRINTS, ts("2026-11-05T09:00:00"), m.DEFAULT_SPRINT_RE), "49")
 
-    def test_fetch_failure_is_none(self):
-        fetch_fn = lambda: None
-        self.assertIsNone(m.resolve_active_sprint_number(127, m.DEFAULT_SPRINT_RE, fetch_fn))
+    def test_meeting_during_active_sprint_gets_active_sprint(self):
+        self.assertEqual(m.sprint_number_for_time(BOARD_SPRINTS, ts("2026-11-24T09:00:00"), m.DEFAULT_SPRINT_RE), "50")
+
+    def test_active_sprint_overrunning_planned_end_still_covers(self):
+        self.assertEqual(m.sprint_number_for_time(BOARD_SPRINTS, ts("2026-11-27T09:00:00"), m.DEFAULT_SPRINT_RE), "50")
+
+    def test_old_sprint_meeting_not_billed_to_new_active_sprint(self):
+        """The bug this replaces: Sprint 51 now active, but a meeting from
+        Sprint 50's last days must still resolve to 50."""
+        sprints = [
+            {"name": "Sprint 50", "state": "closed", "startDate": "2026-11-13T14:55:49Z",
+             "endDate": "2026-11-26T15:15:00Z", "completeDate": "2026-11-27T08:00:00Z"},
+            {"name": "Sprint 51", "state": "active", "startDate": "2026-11-27T09:00:00Z",
+             "endDate": "2026-12-10T15:15:00Z"},
+        ]
+        self.assertEqual(m.sprint_number_for_time(sprints, ts("2026-11-25T09:00:00"), m.DEFAULT_SPRINT_RE), "50")
+        self.assertEqual(m.sprint_number_for_time(sprints, ts("2026-11-27T10:00:00"), m.DEFAULT_SPRINT_RE), "51")
+
+    def test_closed_sprint_without_complete_date_uses_planned_end(self):
+        sprints = [{"name": "Sprint 48", "state": "closed", "startDate": "2026-10-16T13:24:05Z",
+                    "endDate": "2026-10-29T15:15:00Z"}]
+        self.assertEqual(m.sprint_number_for_time(sprints, ts("2026-10-29T15:00:00"), m.DEFAULT_SPRINT_RE), "48")
+        self.assertIsNone(m.sprint_number_for_time(sprints, ts("2026-10-29T16:00:00"), m.DEFAULT_SPRINT_RE))
+
+    def test_same_day_gap_goes_to_sprint_starting_later_that_day(self):
+        """Sprint 49 closed 10:00, Sprint 50 started 14:55 the same day:
+        a 12:00 meeting belongs to Sprint 50's first day."""
+        self.assertEqual(m.sprint_number_for_time(BOARD_SPRINTS, ts("2026-11-13T12:00:00"), m.DEFAULT_SPRINT_RE), "50")
+
+    def test_morning_before_sprint_started_in_evening(self):
+        """Real Oct 29/30 shape: Sprint 48 closed the evening before,
+        Sprint 49 only started at 13:02 UTC on its first day."""
+        sprints = [
+            {"name": "Sprint 48", "state": "closed", "startDate": "2026-10-16T13:24:05Z",
+             "endDate": "2026-10-29T15:15:00Z", "completeDate": "2026-10-29T14:36:52Z"},
+            {"name": "Sprint 49", "state": "active", "startDate": "2026-10-30T13:02:44Z"},
+        ]
+        when = ts("2026-10-30T05:35:00")
+        if m.jw.local_date(when) != m.jw.local_date(ts("2026-10-30T13:02:44")):
+            self.skipTest("local timezone puts these on different days")
+        self.assertEqual(m.sprint_number_for_time(sprints, when, m.DEFAULT_SPRINT_RE), "49")
+
+    def test_multi_day_gap_between_sprints_is_none(self):
+        sprints = [
+            {"name": "Sprint 48", "state": "closed", "startDate": "2026-10-16T12:00:00Z",
+             "completeDate": "2026-10-20T12:00:00Z"},
+            {"name": "Sprint 49", "state": "active", "startDate": "2026-10-23T12:00:00Z"},
+        ]
+        self.assertIsNone(m.sprint_number_for_time(sprints, ts("2026-10-21T12:00:00"), m.DEFAULT_SPRINT_RE))
+
+    def test_before_board_history_is_none(self):
+        self.assertIsNone(m.sprint_number_for_time(BOARD_SPRINTS, ts("2026-01-01T09:00:00"), m.DEFAULT_SPRINT_RE))
+
+    def test_overlapping_sprints_are_ambiguous_none(self):
+        sprints = BOARD_SPRINTS + [{"name": "Sprint 99", "state": "active", "startDate": "2026-11-20T00:00:00Z"}]
+        self.assertIsNone(m.sprint_number_for_time(sprints, ts("2026-11-24T09:00:00"), m.DEFAULT_SPRINT_RE))
+
+    def test_unstarted_sprint_without_start_date_ignored(self):
+        sprints = BOARD_SPRINTS + [{"name": "Sprint 51", "state": "closed"}]
+        self.assertEqual(m.sprint_number_for_time(sprints, ts("2026-11-24T09:00:00"), m.DEFAULT_SPRINT_RE), "50")
+
+    def test_fetch_failure_or_empty_is_none(self):
+        self.assertIsNone(m.sprint_number_for_time(None, ts("2026-11-24T09:00:00"), m.DEFAULT_SPRINT_RE))
+        self.assertIsNone(m.sprint_number_for_time([], ts("2026-11-24T09:00:00"), m.DEFAULT_SPRINT_RE))
 
 
 class ResolveTicketForEventTier3(unittest.TestCase):
     def mkcfg(self):
         return {"jira_project_keys": ["ZC"], "sprint_reporter_account_id": "acc123"}
 
-    def test_no_title_sprint_number_falls_back_to_active_sprint(self):
+    def test_no_title_sprint_number_falls_back_to_board_sprint(self):
         event = {"summary": "Online : zConnect DSM"}
         search_fn = lambda jql: [{"key": "ZC-3800"}]
         ticket, reason = m.resolve_ticket_for_event(
-            event, {"ZC"}, self.mkcfg(), {}, search_fn, m.DEFAULT_SPRINT_RE, active_sprint_number="50",
+            event, {"ZC"}, self.mkcfg(), {}, search_fn, m.DEFAULT_SPRINT_RE, board_sprint_number="50",
         )
-        self.assertEqual((ticket, reason), ("ZC-3800", "current_sprint:50"))
+        self.assertEqual((ticket, reason), ("ZC-3800", "board_sprint:50"))
 
-    def test_title_sprint_number_takes_precedence_over_active_sprint(self):
+    def test_title_sprint_number_takes_precedence_over_board_sprint(self):
         event = {"summary": "Meeting/Discussion Sprint #49"}
         search_fn = lambda jql: [{"key": "ZC-OLD"}]
         ticket, reason = m.resolve_ticket_for_event(
-            event, {"ZC"}, self.mkcfg(), {}, search_fn, m.DEFAULT_SPRINT_RE, active_sprint_number="50",
+            event, {"ZC"}, self.mkcfg(), {}, search_fn, m.DEFAULT_SPRINT_RE, board_sprint_number="50",
         )
         self.assertEqual((ticket, reason), ("ZC-OLD", "sprint:49"))
 
-    def test_no_active_sprint_and_no_title_number_stays_unmatched(self):
+    def test_no_board_sprint_and_no_title_number_stays_unmatched(self):
         event = {"summary": "Customer Segments, ICP & Leveraging AI Across ZPH"}
         search_fn = lambda jql: (_ for _ in ()).throw(AssertionError("search should not be called"))
         ticket, reason = m.resolve_ticket_for_event(
-            event, {"ZC"}, self.mkcfg(), {}, search_fn, m.DEFAULT_SPRINT_RE, active_sprint_number=None,
+            event, {"ZC"}, self.mkcfg(), {}, search_fn, m.DEFAULT_SPRINT_RE, board_sprint_number=None,
         )
         self.assertEqual((ticket, reason), (None, "unmatched"))
 
