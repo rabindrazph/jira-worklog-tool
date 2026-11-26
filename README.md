@@ -15,12 +15,12 @@ See `FUTURE_ENHANCEMENTS.md` for known limitations, and `CLAUDE.md` if you're wo
 
 ### 1. Put the repo in the right place
 
-Two path constants near the top of `jira_worklog.py` control where everything lives:
+Nothing to edit in the script itself — clone it wherever you like, no path constants to touch:
 
-- `BASE_DIR` — the parent folder that holds all your Jira-ticket project checkouts (the tool derives its Claude Code transcript lookups from `BASE_DIR/<project-name>/`). The tool itself must also live directly under `BASE_DIR`, in a subfolder.
-- `CONFIG_DIR` — where credentials/config/state live (see step 3), separate from the repo.
+- `BASE_DIR` is derived automatically from wherever `jira_worklog.py` lives: its parent folder. That's the folder that holds all your Jira-ticket project checkouts (the tool derives its Claude Code transcript lookups from `BASE_DIR/<project-name>/`), so the tool itself must live directly under it, in its own subfolder.
+- `CONFIG_DIR` (where credentials/config/state live — see step 3) defaults to `~/.config/jira-worklog-tool`, separate from the repo. No need to change it.
 
-Check what those two constants are currently set to before you start, and either use those exact paths, or edit the constants to point wherever you'd like instead. The rest of this guide uses `<BASE_DIR>` and `<CONFIG_DIR>` as placeholders for whatever you land on.
+The rest of this guide uses `<BASE_DIR>` as a placeholder for whichever parent folder you pick.
 
 ```bash
 mkdir -p <BASE_DIR>
@@ -152,9 +152,10 @@ If it ever says Google returned no refresh token, you've likely already consente
 Meetings with a direct Jira ticket key or `/browse/TICKET-123` link anywhere in the title/description/location resolve automatically (Tier 1) — most meetings should hit this. For recurring sprint ceremonies named like `Sprint #50` with no direct link, the tool falls back to a Jira search (Tier 2) for the matching sprint ticket, filtered to a specific reporter. Jira Cloud's search needs an **accountId**, not a display name:
 
 ```bash
-curl -s -u "you@yourcompany.com:your-api-token" \
-  "https://yourcompany.atlassian.net/rest/api/3/user/search?query=Jasmeen" | python3 -m json.tool
+python3 jira_calendar_worklog.py --find-account "Jasmeen"
 ```
+
+This looks up `/rest/api/3/user/search` using the Jira credentials already in `<CONFIG_DIR>/credentials.json` and prints each match's `accountId`, name, and email. If it prints "No Jira users found" for every query (even a single common letter), your Jira instance restricts that endpoint to admins — ask a Jira admin for the accountId instead, or have them grant you the "Browse users" global permission.
 
 Copy the `accountId` of the right person into `sprint_reporter_account_id` below.
 
@@ -209,4 +210,5 @@ python3 jira_calendar_worklog.py --setup-google-auth           # (re-)run the on
 - **Sprint lookup always "ambiguous" or "found 0"** — check `jira_project_keys` actually covers the project the sprint ticket lives in, that `sprint_reporter_account_id` is an accountId (not a name — see step 3), and that the sprint ticket's summary really contains `Sprint #<N>` matching the meeting title's number.
 - **A meeting you expected to bill shows up as "unmatched" in the log** — it has no ticket key/link anywhere in its title/description/location, and either didn't match the sprint-number pattern or `sprint_reporter_account_id` isn't configured. This is intentional: there's no fallback ticket, so ambiguous or unresolvable meetings are always skipped rather than guessed at.
 - **An optional meeting you skipped still gets billed** — decline the invite in Google Calendar for that occurrence; only an explicit decline excludes a meeting (`declined_skipped` in the run summary). Just not joining one you accepted (or never responded to) still bills — there's no actual attendance signal available, only your RSVP.
-- **Known v1 limitations** — see `FUTURE_ENHANCEMENTS.md` (declined/tentative meetings still bill if matched, overlapping meetings each bill their full duration, no automated accountId discovery).
+- **Two overlapping meetings don't both bill their full duration** — this is intentional: an `"accepted"` meeting always wins the overlapping time over a tentative/no-response one; same-priority ties go to whichever started earlier. The loser either gets clipped (comment gets a "shortened: overlapped..." note) or, if fully covered, drops to 0 minutes and shows up as `overlap_dropped` in the run summary / `status=dropped_overlap` in `activity.log`.
+- **Known v1 limitations** — see `FUTURE_ENHANCEMENTS.md` (declined/tentative meetings still bill if matched even when you didn't actually attend, no automated accountId discovery on Jira instances that restrict user search).

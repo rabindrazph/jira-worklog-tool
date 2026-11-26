@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Scans local Claude Code session transcripts (prompts + responses) for
-enabled zakipoint projects, estimates active time from message-gap timing,
+enabled local projects, estimates active time from message-gap timing,
 maps sessions to Jira tickets via the recorded git branch, and auto-submits
 Jira worklogs. Designed to run unattended from cron. Stdlib only.
 """
@@ -22,9 +22,12 @@ SUMMARY_MODEL = "claude-sonnet-5"
 SUMMARY_TIMEOUT_SECONDS = 45
 
 HOME = Path.home()
-BASE_DIR = HOME / "Desktop" / "zakipoint"
-TOOL_DIR = BASE_DIR / "jira-worklog-tool"
-CONFIG_DIR = HOME / ".config" / "zakipoint-jira"
+# TOOL_DIR is derived from this file's own location, not hardcoded, so the
+# repo works no matter where/what it's cloned as. BASE_DIR (its parent) is
+# the folder that holds all your Jira-ticket project checkouts alongside it.
+TOOL_DIR = Path(__file__).resolve().parent
+BASE_DIR = TOOL_DIR.parent
+CONFIG_DIR = HOME / ".config" / "jira-worklog-tool"
 CREDENTIALS_FILE = CONFIG_DIR / "credentials.json"
 CONFIG_FILE = CONFIG_DIR / "config.json"
 STATE_FILE = CONFIG_DIR / "state.json"

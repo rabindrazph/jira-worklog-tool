@@ -78,6 +78,10 @@ def parse_args(argv=None) -> argparse.Namespace:
         "--void", nargs=2, metavar=("TICKET", "WORKLOG_ID"),
         help="Delete a previously-submitted Jira worklog (id from logs/<TICKET>/activity.log), then exit",
     )
+    parser.add_argument(
+        "--find-account", metavar="QUERY",
+        help="Look up a Jira user's accountId by name/email (for sprint_reporter_account_id), then exit",
+    )
     return parser.parse_args(argv)
 
 
@@ -253,6 +257,47 @@ def jql_search(base_url: str, auth_header: str, jql: str) -> list[dict] | None:
     return data.get("issues", [])
 
 
+def search_jira_users(base_url: str, auth_header: str, query: str) -> list[dict] | None:
+    """GET /rest/api/3/user/search — the lookup README.md used to tell you
+    to run by hand with curl, to find the accountId sprint_reporter_account_id
+    needs. Needs a Jira admin-granted 'browse users' permission, same as the
+    curl version did; an unauthorized caller gets back an empty list, not an
+    error, so there's nothing special to detect there."""
+    url = f"{base_url}/rest/api/3/user/search?{urllib.parse.urlencode({'query': query})}"
+    req = urllib.request.Request(url, method="GET")
+    req.add_header("Authorization", auth_header)
+    try:
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            return json.loads(resp.read())
+    except urllib.error.HTTPError as e:
+        jw.log(f"ERROR: Jira user search rejected: {e.code} {e.read().decode(errors='replace')}")
+        return None
+    except (urllib.error.URLError, json.JSONDecodeError) as e:
+        jw.log(f"ERROR: Jira user search failed: {e}")
+        return None
+
+
+def run_find_account(base_url: str, auth_header: str, query: str) -> int:
+    users = search_jira_users(base_url, auth_header, query)
+    if users is None:
+        return 1
+    if not users:
+        print(
+            f"No Jira users found matching {query!r}. If this happens for every query "
+            f"(even a single common letter), your Jira instance likely restricts "
+            f"/rest/api/3/user/search to admins — ask a Jira admin for the accountId instead, "
+            f"or have them grant you the 'Browse users' global permission."
+        )
+        return 1
+    for u in users:
+        print(f"{u.get('accountId')}  {u.get('displayName')}  <{u.get('emailAddress', '?')}>"
+              f"{'' if u.get('active', True) else '  [inactive]'}")
+    if len(users) > 1:
+        print("\nMultiple matches — copy the accountId of the right person into "
+              "sprint_reporter_account_id in calendar_config.json.")
+    return 0
+
+
 def fetch_active_sprints(base_url: str, auth_header: str, board_id: int) -> list[dict] | None:
     url = f"{base_url}/rest/agile/1.0/board/{board_id}/sprint?state=active"
     req = urllib.request.Request(url, method="GET")
@@ -380,17 +425,23 @@ def meeting_comment(event: dict) -> str:
     return event.get("summary") or "Meeting"
 
 
-def event_to_entry(event: dict, ticket: str, minutes: float, start_dt: datetime) -> dict:
+def event_to_entry(event: dict, ticket: str, minutes: float, start_dt: datetime, shortened: bool = False) -> dict:
     """One entry per meeting -- unlike the main tool, these are never merged
     by (ticket, day): each meeting gets its own Jira worklog, at its own
-    actual start time, with its own title as the comment. Shaped to match
-    what jw.apply_daily_cap() expects (it only groups by "day", so capping
-    across several same-day meetings still works unchanged)."""
+    actual (possibly overlap-clipped) start time, with its own title as
+    the comment. Shaped to match what jw.apply_daily_cap() expects (it
+    only groups by "day", so capping across several same-day meetings
+    still works unchanged). `shortened` appends a note to the comment
+    when resolve_overlaps clipped this meeting's duration because a
+    higher-priority meeting overlapped it."""
+    prompts = [meeting_comment(event)]
+    if shortened:
+        prompts.append("shortened: overlapped with a higher-priority meeting")
     return {
         "ticket": ticket,
         "day": jw.local_date(start_dt),
         "minutes": minutes,
-        "prompts": [meeting_comment(event)],
+        "prompts": prompts,
         "started": start_dt,
         "sessions": {event["id"]},
     }
@@ -419,6 +470,121 @@ def is_declined_by_self(event: dict) -> bool:
 
 
 # ---------------------------------------------------------------------------
+# Overlap resolution
+# ---------------------------------------------------------------------------
+
+def event_priority_tier(event: dict) -> int:
+    """0 (highest) for an accepted RSVP, 1 for everything else that
+    survives is_declined_by_self (tentative/no-response/no attendee data
+    at all — these already bill the same as each other, so they share a
+    tier). Used only by resolve_overlaps to decide who keeps the
+    overlapping slice of time; a declined meeting never reaches this,
+    it's filtered out earlier."""
+    return 0 if self_response_status(event) == "accepted" else 1
+
+
+def _merge_claimed(claimed: list[tuple[datetime, datetime]], start: datetime, end: datetime) -> None:
+    """Inserts [start, end) into the sorted, merged list of claimed
+    intervals in place."""
+    claimed.append((start, end))
+    claimed.sort()
+    merged = [claimed[0]]
+    for s, e in claimed[1:]:
+        last_s, last_e = merged[-1]
+        if s <= last_e:
+            merged[-1] = (last_s, max(last_e, e))
+        else:
+            merged.append((s, e))
+    claimed[:] = merged
+
+
+def _largest_remainder(start: datetime, end: datetime,
+                        claimed: list[tuple[datetime, datetime]]) -> tuple[datetime, datetime] | None:
+    """[start, end) minus everything already in `claimed`, keeping only
+    the single largest contiguous leftover piece. An event is never
+    fragmented into two separate billable pieces (e.g. a higher-priority
+    meeting nested in the middle would split it into a before/after
+    remainder; only the bigger half bills and the smaller one is dropped
+    silently) -- same "don't guess/split" spirit as the rest of this
+    tool's ticket resolution. None if nothing is left at all."""
+    pieces = [(start, end)]
+    for c_start, c_end in claimed:
+        next_pieces = []
+        for p_start, p_end in pieces:
+            if c_end <= p_start or c_start >= p_end:
+                next_pieces.append((p_start, p_end))
+                continue
+            if c_start > p_start:
+                next_pieces.append((p_start, c_start))
+            if c_end < p_end:
+                next_pieces.append((c_end, p_end))
+        pieces = next_pieces
+    pieces = [p for p in pieces if p[1] > p[0]]
+    if not pieces:
+        return None
+    return max(pieces, key=lambda p: p[1] - p[0])
+
+
+def logged_billed_interval(event: dict, record: dict) -> tuple[datetime, datetime] | None:
+    """The wall-clock interval an already-logged event actually billed, for
+    seeding resolve_overlaps' claimed time. Uses the billed_start/
+    billed_minutes recorded in calendar_state.json["logged_events"] when
+    present (an overlap- or cap-clipped event only blocks what it really
+    billed; one dropped to 0 blocks nothing). Records written before those
+    fields existed fall back to the event's full scheduled interval, which
+    can only over-block -- i.e. err toward billing less, never double."""
+    billed_start = record.get("billed_start")
+    billed_minutes = record.get("billed_minutes")
+    if billed_start is not None and billed_minutes is not None:
+        if billed_minutes <= 0:
+            return None
+        try:
+            start_dt = jw.parse_ts(billed_start)
+        except (TypeError, ValueError):
+            return event_start_end(event)
+        return start_dt, start_dt + timedelta(minutes=billed_minutes)
+    return event_start_end(event)
+
+
+def resolve_overlaps(events_with_times: list[tuple[dict, datetime, datetime]],
+                     already_claimed: list[tuple[datetime, datetime]] | None = None,
+                     ) -> list[tuple[dict, datetime, float]]:
+    """Clips each event's billable interval against higher-or-equal-
+    priority events that overlap it, so two overlapping meetings never
+    double-bill the same wall-clock time. Priority: an accepted RSVP
+    outranks everything else; tied priority breaks by earlier start --
+    the meeting you were already in keeps the floor over one that starts
+    overlapping it later (an accepted meeting can still claim time away
+    from an already-started lower-priority one, though, since tier beats
+    start time). An event fully covered by a higher-priority one bills 0
+    minutes; see _largest_remainder for the never-split-into-two-pieces
+    rule. Returns (event, billable_start, billable_minutes) once per
+    input event; order is not meaningful to callers.
+
+    `already_claimed` seeds the claimed time with intervals already billed
+    to Jira in earlier runs (see logged_billed_interval). Those always win
+    regardless of RSVP tier: their worklogs already exist and this tool
+    never edits a submitted worklog, so clipping the new event is the only
+    way to avoid billing the same wall-clock slice twice. They are never
+    returned, so nothing already logged is ever resubmitted."""
+    ordered = sorted(events_with_times, key=lambda item: (event_priority_tier(item[0]), item[1]))
+    claimed: list[tuple[datetime, datetime]] = []
+    for c_start, c_end in already_claimed or []:
+        if c_end > c_start:
+            _merge_claimed(claimed, c_start, c_end)
+    results = []
+    for event, start_dt, end_dt in ordered:
+        remainder = _largest_remainder(start_dt, end_dt, claimed)
+        if remainder is None:
+            results.append((event, start_dt, 0.0))
+        else:
+            r_start, r_end = remainder
+            results.append((event, r_start, (r_end - r_start).total_seconds() / 60))
+        _merge_claimed(claimed, start_dt, end_dt)
+    return results
+
+
+# ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
 
@@ -438,6 +604,9 @@ def main(args: argparse.Namespace) -> int:
             jw.log(f"Voided worklog {worklog_id} on {ticket}")
             jw.log_ticket(ticket, f"status=voided worklog_id={worklog_id} source=calendar")
         return 0 if ok else 1
+
+    if args.find_account:
+        return run_find_account(base_url, auth_header, args.find_account)
 
     google_creds = jw.load_json(GOOGLE_CREDENTIALS_FILE, required=False, default={})
     validate_google_credentials(google_creds)
@@ -490,23 +659,47 @@ def main(args: argparse.Namespace) -> int:
     skipped_dupe = 0
     skipped_all_day = 0
     skipped_declined = 0
+    overlap_dropped = 0
+    overlap_shortened = 0
 
+    # Pass 1: dedup/declined/all-day filtering only -- deliberately before
+    # ticket resolution, since resolve_overlaps needs every surviving
+    # event's real interval up front to clip against each other, and
+    # doesn't care yet which ticket (if any) an event will resolve to.
+    candidates = []  # (event, start_dt, end_dt, full_minutes)
+    # Time already billed by events logged in earlier runs: still blocks
+    # new overlapping events (regardless of the old event's current RSVP --
+    # its worklog exists in Jira either way), but is never resubmitted.
+    already_claimed: list[tuple[datetime, datetime]] = []
     for event in events:
         event_id = event.get("id")
         if not event_id:
             continue
         if not is_new_event(event_id, cal_state):
             skipped_dupe += 1
+            interval = logged_billed_interval(event, cal_state["logged_events"][event_id])
+            if interval is not None:
+                already_claimed.append(interval)
             continue
         if is_declined_by_self(event):
             skipped_declined += 1
             jw.vlog(f"Skipped declined event {event_id!r} ({event.get('summary')!r})")
             continue
-        minutes = event_duration_minutes(event)
-        if minutes is None:
+        full_minutes = event_duration_minutes(event)
+        if full_minutes is None:
             skipped_all_day += 1
             continue
-        start_dt, _ = event_start_end(event)
+        start_dt, end_dt = event_start_end(event)
+        candidates.append((event, start_dt, end_dt, full_minutes))
+
+    full_minutes_by_id = {e["id"]: fm for e, _, _, fm in candidates}
+    resolved = resolve_overlaps([(e, s, en) for e, s, en, _ in candidates], already_claimed)
+
+    # Pass 2: ticket resolution + entry building, using each event's
+    # overlap-clipped (billable_start, billable_minutes) instead of its
+    # raw scheduled interval.
+    for event, billable_start, billable_minutes in resolved:
+        event_id = event["id"]
         ticket, reason = resolve_ticket_for_event(
             event, known_keys, cal_cfg, cal_state["sprint_ticket_cache"], search_fn, sprint_re, active_sprint_number,
         )
@@ -514,13 +707,23 @@ def main(args: argparse.Namespace) -> int:
             unmatched += 1
             jw.vlog(f"Unmatched event {event_id!r} ({event.get('summary')!r}): {reason}")
             continue
-        all_entries.append(event_to_entry(event, ticket, minutes, start_dt))
+        full_minutes = full_minutes_by_id[event_id]
+        shortened = 0 < billable_minutes < full_minutes - 0.5
+        if shortened:
+            overlap_shortened += 1
+        entry = event_to_entry(event, ticket, billable_minutes, billable_start, shortened=shortened)
+        if billable_minutes <= 0:
+            overlap_dropped += 1
+            entry["dropped_reason"] = "overlap"
+            jw.vlog(f"Overlap-dropped event {event_id!r} ({event.get('summary')!r}): "
+                    f"fully covered by a higher-priority meeting")
+        all_entries.append(entry)
 
     if not all_entries:
         jw.log(
             f"No new billable meeting activity. "
             f"(unmatched={unmatched} dupes_skipped={skipped_dupe} all_day_skipped={skipped_all_day} "
-            f"declined_skipped={skipped_declined})"
+            f"declined_skipped={skipped_declined} overlap_dropped={overlap_dropped})"
         )
         return 0
 
@@ -544,10 +747,15 @@ def main(args: argparse.Namespace) -> int:
     for e in entries:
         if e["minutes"] <= 0:
             dropped += 1
+            # "overlap" was set in pass 2 above, before the cap even ran;
+            # anything else hitting zero here was zeroed by the cap itself.
+            drop_reason = e.get("dropped_reason", "cap")
+            drop_desc = ("fully overlapped by a higher-priority meeting" if drop_reason == "overlap"
+                         else "no room left under daily cap")
             if args.dry_run:
-                jw.log(f"[DRY RUN] Would drop {e['ticket']} ({e['day']}): no room left under daily cap")
+                jw.log(f"[DRY RUN] Would drop {e['ticket']} ({e['day']}): {drop_desc}")
             else:
-                jw.log_ticket(e["ticket"], f"day={e['day']} status=dropped_cap source=calendar")
+                jw.log_ticket(e["ticket"], f"day={e['day']} status=dropped_{drop_reason} source=calendar")
         else:
             seconds = jw.round_minutes(e["minutes"]) * 60
             comment = "; ".join(dict.fromkeys(e["prompts"]))
@@ -579,14 +787,21 @@ def main(args: argparse.Namespace) -> int:
         for eid in e["sessions"]:
             remaining_per_event[eid] -= 1
             if remaining_per_event[eid] == 0 and eid not in blocked_events:
-                cal_state["logged_events"][eid] = {"ticket": e["ticket"], "day": e["day"]}
+                cal_state["logged_events"][eid] = {
+                    "ticket": e["ticket"], "day": e["day"],
+                    # What was actually billed (post overlap-clip and cap
+                    # scaling), so later runs block only this slice -- see
+                    # logged_billed_interval.
+                    "billed_start": e["started"].isoformat(),
+                    "billed_minutes": round(e["minutes"], 2),
+                }
         jw.save_state(state)
         save_calendar_state(cal_state)
 
     jw.log(
         f"Done. submitted={submitted} failed={failed} dropped={dropped} "
         f"unmatched={unmatched} dupes_skipped={skipped_dupe} all_day_skipped={skipped_all_day} "
-        f"declined_skipped={skipped_declined}"
+        f"declined_skipped={skipped_declined} overlap_dropped={overlap_dropped} overlap_shortened={overlap_shortened}"
     )
     return 0 if failed == 0 else 1
 

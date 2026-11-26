@@ -285,5 +285,135 @@ class ResolveTicketForEventTier3(unittest.TestCase):
         self.assertEqual((ticket, reason), (None, "unmatched"))
 
 
+def mkevent(event_id, response_status="accepted"):
+    return {"id": event_id, "attendees": [{"self": True, "responseStatus": response_status}]}
+
+
+class ResolveOverlaps(unittest.TestCase):
+    def test_no_overlap_bills_full_duration_both(self):
+        e1, e2 = mkevent("a", "accepted"), mkevent("b", "accepted")
+        result = m.resolve_overlaps([
+            (e1, ts("2026-11-24T09:00:00"), ts("2026-11-24T10:00:00")),
+            (e2, ts("2026-11-24T10:00:00"), ts("2026-11-24T11:00:00")),
+        ])
+        by_id = {e["id"]: (start, minutes) for e, start, minutes in result}
+        self.assertEqual(by_id["a"], (ts("2026-11-24T09:00:00"), 60.0))
+        self.assertEqual(by_id["b"], (ts("2026-11-24T10:00:00"), 60.0))
+
+    def test_same_tier_partial_overlap_earlier_start_wins(self):
+        earlier, later = mkevent("earlier", "tentative"), mkevent("later", "tentative")
+        result = m.resolve_overlaps([
+            (later, ts("2026-11-24T10:30:00"), ts("2026-11-24T11:30:00")),
+            (earlier, ts("2026-11-24T10:00:00"), ts("2026-11-24T11:00:00")),
+        ])
+        by_id = {e["id"]: (start, minutes) for e, start, minutes in result}
+        self.assertEqual(by_id["earlier"], (ts("2026-11-24T10:00:00"), 60.0))
+        self.assertEqual(by_id["later"], (ts("2026-11-24T11:00:00"), 30.0))
+
+    def test_accepted_overrides_tentative_started_earlier(self):
+        tentative = mkevent("tentative_ev", "tentative")
+        accepted = mkevent("accepted_ev", "accepted")
+        result = m.resolve_overlaps([
+            (tentative, ts("2026-11-24T10:00:00"), ts("2026-11-24T11:00:00")),
+            (accepted, ts("2026-11-24T10:30:00"), ts("2026-11-24T11:30:00")),
+        ])
+        by_id = {e["id"]: (start, minutes) for e, start, minutes in result}
+        self.assertEqual(by_id["accepted_ev"], (ts("2026-11-24T10:30:00"), 60.0))
+        self.assertEqual(by_id["tentative_ev"], (ts("2026-11-24T10:00:00"), 30.0))
+
+    def test_lower_priority_fully_covered_bills_zero(self):
+        higher = mkevent("higher", "accepted")
+        lower = mkevent("lower", "tentative")
+        result = m.resolve_overlaps([
+            (lower, ts("2026-11-24T10:30:00"), ts("2026-11-24T11:00:00")),
+            (higher, ts("2026-11-24T10:00:00"), ts("2026-11-24T12:00:00")),
+        ])
+        by_id = {e["id"]: minutes for e, _, minutes in result}
+        self.assertEqual(by_id["higher"], 120.0)
+        self.assertEqual(by_id["lower"], 0.0)
+
+    def test_higher_priority_nested_inside_keeps_larger_remainder(self):
+        """A short accepted meeting nested in the middle of a long tentative
+        block splits the tentative block into a before/after remainder --
+        only the larger piece should bill, never both as one entry."""
+        tentative = mkevent("tentative_block", "tentative")
+        accepted = mkevent("accepted_nested", "accepted")
+        result = m.resolve_overlaps([
+            (tentative, ts("2026-11-24T09:00:00"), ts("2026-11-24T12:00:00")),
+            (accepted, ts("2026-11-24T10:00:00"), ts("2026-11-24T10:10:00")),
+        ])
+        by_id = {e["id"]: (start, minutes) for e, start, minutes in result}
+        self.assertEqual(by_id["accepted_nested"], (ts("2026-11-24T10:00:00"), 10.0))
+        self.assertEqual(by_id["tentative_block"], (ts("2026-11-24T10:10:00"), 110.0))
+
+    def test_declined_never_passed_in_does_not_affect_others(self):
+        """Caller is expected to filter out declined events before calling
+        resolve_overlaps -- this just confirms a single surviving event is
+        unaffected when nothing else overlaps it."""
+        solo = mkevent("solo", "tentative")
+        result = m.resolve_overlaps([
+            (solo, ts("2026-11-24T09:00:00"), ts("2026-11-24T09:30:00")),
+        ])
+        self.assertEqual(result, [(solo, ts("2026-11-24T09:00:00"), 30.0)])
+
+
+
+class ResolveOverlapsAlreadyClaimed(unittest.TestCase):
+    """Time billed by events logged in earlier runs blocks new events."""
+
+    def test_new_event_clipped_by_previously_billed_time(self):
+        new = mkevent("new", "accepted")
+        result = m.resolve_overlaps(
+            [(new, ts("2026-11-24T10:30:00"), ts("2026-11-24T11:30:00"))],
+            already_claimed=[(ts("2026-11-24T10:00:00"), ts("2026-11-24T11:00:00"))],
+        )
+        self.assertEqual(result, [(new, ts("2026-11-24T11:00:00"), 30.0)])
+
+    def test_new_event_fully_covered_by_previously_billed_time_bills_zero(self):
+        new = mkevent("new", "accepted")
+        result = m.resolve_overlaps(
+            [(new, ts("2026-11-24T10:15:00"), ts("2026-11-24T10:45:00"))],
+            already_claimed=[(ts("2026-11-24T10:00:00"), ts("2026-11-24T11:00:00"))],
+        )
+        self.assertEqual(result, [(new, ts("2026-11-24T10:15:00"), 0.0)])
+
+    def test_already_claimed_never_returned(self):
+        result = m.resolve_overlaps(
+            [], already_claimed=[(ts("2026-11-24T10:00:00"), ts("2026-11-24T11:00:00"))],
+        )
+        self.assertEqual(result, [])
+
+    def test_no_already_claimed_matches_default(self):
+        e = mkevent("e", "tentative")
+        items = [(e, ts("2026-11-24T09:00:00"), ts("2026-11-24T09:30:00"))]
+        self.assertEqual(m.resolve_overlaps(items, already_claimed=[]), m.resolve_overlaps(items))
+
+
+class LoggedBilledInterval(unittest.TestCase):
+    def event(self):
+        return {"id": "x", "start": {"dateTime": "2026-11-24T10:00:00Z"},
+                "end": {"dateTime": "2026-11-24T11:00:00Z"}}
+
+    def test_uses_recorded_billed_slice(self):
+        record = {"ticket": "ZC-1", "day": "2026-11-24",
+                  "billed_start": "2026-11-24T10:30:00+00:00", "billed_minutes": 30}
+        self.assertEqual(m.logged_billed_interval(self.event(), record),
+                         (ts("2026-11-24T10:30:00"), ts("2026-11-24T11:00:00")))
+
+    def test_zero_billed_blocks_nothing(self):
+        record = {"ticket": "ZC-1", "day": "2026-11-24",
+                  "billed_start": "2026-11-24T10:00:00+00:00", "billed_minutes": 0}
+        self.assertIsNone(m.logged_billed_interval(self.event(), record))
+
+    def test_legacy_record_falls_back_to_scheduled_interval(self):
+        record = {"ticket": "ZC-1", "day": "2026-11-24"}
+        self.assertEqual(m.logged_billed_interval(self.event(), record),
+                         (ts("2026-11-24T10:00:00"), ts("2026-11-24T11:00:00")))
+
+    def test_legacy_record_for_all_day_event_blocks_nothing(self):
+        event = {"id": "x", "start": {"date": "2026-11-24"}, "end": {"date": "2026-11-25"}}
+        self.assertIsNone(m.logged_billed_interval(event, {"ticket": "ZC-1", "day": "2026-11-24"}))
+
+
 if __name__ == "__main__":
     unittest.main()
